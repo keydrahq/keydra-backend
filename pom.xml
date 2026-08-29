@@ -340,7 +340,7 @@
         <dependency>
             <groupId>com.aerospike</groupId>
             <artifactId>aerospike-reactor-client</artifactId>
-            <version>9.0.5</version>
+            <version>10.4.0</version>
         </dependency>
         <!--
           A Lua interpreter, pure Java: no native library, so it runs wherever the rest of this
