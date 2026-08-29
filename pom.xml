@@ -425,6 +425,19 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${surefire-plugin.version}</version>
                 <configuration>
+                    <!--
+                      Surefire's default is `filesystem`, which is directory order and therefore a
+                      different order on every machine. That is not a preference here: which test
+                      class starts Quarkus first decides which class loads TiKV's shaded Guava
+                      first, and one of those orders initialises it re-entrantly and fails the
+                      whole boot with an NPE inside ImmutableList.<clinit>. The suite passed
+                      locally and failed in CI on the same commit for exactly that reason.
+
+                      Alphabetical does not fix the underlying class-init bug — it makes the
+                      order the same everywhere, so the bug either always happens or never does,
+                      and a failure is reproducible on the machine of whoever has to fix it.
+                    -->
+                    <runOrder>alphabetical</runOrder>
                     <argLine>@{argLine}</argLine>
                     <systemPropertyVariables>
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>

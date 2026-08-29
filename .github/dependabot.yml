@@ -1,7 +1,10 @@
-# Dependency updates, grouped so a week is one pull request rather than thirty.
+# Dependency updates.
 #
-# Weekly rather than daily: this repository has one maintainer, and a queue nobody can
-# read is the same as no updates at all.
+# The first version of this file grouped by update type, and the first thing that came out
+# of it was one pull request carrying Quarkus 3.33.3.1 -> 3.39.1 alongside ten unrelated
+# bumps. Six minor versions of the framework everything here is built on is a migration, not
+# a dependency update, and it arrived labelled "minor-and-patch" — which is what the group
+# name made it look like. Every rule below exists because of that.
 version: 2
 
 updates:
@@ -11,25 +14,53 @@ updates:
       interval: weekly
       day: monday
     open-pull-requests-limit: 5
+    labels:
+      - dependencies
+
+    # A major bump is an API change somebody has to read about. Dependabot is good at
+    # noticing them and bad at judging them, so it does not open them: `./mvnw versions:display-dependency-updates`
+    # says what is waiting whenever somebody wants to look.
+    ignore:
+      - dependency-name: '*'
+        update-types: [version-update:semver-major]
+
     groups:
-      # Quarkus releases its whole platform together, so one at a time is thirty
-      # pull requests that only pass together.
+      # Quarkus alone, and never with anything else. Its BOM moves fifty transitive
+      # versions at once, so a failing build after this lands has one suspect rather than
+      # eleven — which is the whole reason to group at all.
       quarkus:
+        applies-to: version-updates
         patterns:
           - 'io.quarkus:*'
           - 'io.quarkus.platform:*'
+          - 'io.quarkus.*'
+
+      # Everything a test run would blame first, together: a failure here is almost always
+      # the test library rather than the code.
       testing:
+        applies-to: version-updates
         patterns:
           - 'org.junit*'
           - 'io.rest-assured:*'
           - 'org.testcontainers:*'
           - 'org.assertj:*'
           - 'org.mockito:*'
-      # Everything else, by how much it can break.
+
+      # The rest, minor and patch, with the two above kept out of it by name. Without the
+      # exclusions a group with no patterns matches everything, which is how Quarkus ended
+      # up in here the first time.
       minor-and-patch:
+        applies-to: version-updates
         update-types: [minor, patch]
-    labels:
-      - dependencies
+        exclude-patterns:
+          - 'io.quarkus:*'
+          - 'io.quarkus.platform:*'
+          - 'io.quarkus.*'
+          - 'org.junit*'
+          - 'io.rest-assured:*'
+          - 'org.testcontainers:*'
+          - 'org.assertj:*'
+          - 'org.mockito:*'
 
   - package-ecosystem: github-actions
     directory: /
