@@ -1,0 +1,31 @@
+# The console domain.
+#
+# Part of Keydra's GraphQL schema, checked in so a change to the API arrives as a
+# change to a file somebody reads. Generated from io.keydra.console by
+# scripts/split-schema.py; SchemaDriftTest fails when this and the server disagree.
+
+extend type Query {
+  "Commands a target can be allowed to run, each with what allowing it means"
+  askableCommands: [AskableCommand]
+  "What you have run against this target, newest first, with values redacted"
+  consoleHistory(connectionId: BigInteger): [HistoryEntry]
+  "The commands this target refuses to run, whoever is asking"
+  deniedCommands(connectionId: BigInteger): [String]
+}
+
+extend type Mutation {
+  "Empties your own command history on this target"
+  clearConsoleHistory(connectionId: BigInteger): Boolean
+}
+
+type AskableCommand {
+  command: String
+  reason: String
+}
+
+type HistoryEntry {
+  "ISO-8601"
+  executedAt: DateTime
+  id: BigInteger
+  line: String
+}

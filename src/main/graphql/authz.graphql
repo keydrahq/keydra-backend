@@ -1,0 +1,392 @@
+# Who exists, what they belong to, and what that is worth.
+#
+# Part of Keydra's GraphQL schema, checked in so a change to the API arrives as a
+# change to a file somebody reads. Generated from io.keydra.authz by
+# scripts/split-schema.py; SchemaDriftTest fails when this and the server disagree.
+
+extend type Query {
+  "Every account, with the roles it holds"
+  accounts: [UserSummary]
+  "What this instance expects of whoever is asking"
+  authState: AuthState
+  "How many flagged sign-ins there are in the window"
+  flaggedSignInCount(
+    "How far back to look"
+    days: Int = 7
+  ): BigInteger
+  "Sign-ins that worked but did not look like the ones before them"
+  flaggedSignIns(
+    "How far back to look"
+    days: Int = 7,
+    "How many rows to return"
+    first: Int = 50,
+    "How many to skip"
+    offset: Int = 0
+  ): [SignInActivity]
+  "Who holds which role, over what"
+  grants: [GrantSummary]
+  "Every group, with who is in it"
+  groups: [GroupSummary]
+  "Every provider, with the redirect URI each one has to be told about"
+  identityProviders: [ProviderSummary]
+  "How many sign-ins there are to page through"
+  mySignInCount: BigInteger
+  "Your own recent sign-ins, newest first"
+  mySignIns(
+    "How many rows to return"
+    first: Int = 20,
+    "How many to skip"
+    offset: Int = 0
+  ): [SignInActivity]
+  "Every permission a role can carry, with the level it applies at"
+  permissionCatalogue: [PermissionInfo]
+  "Sign-ins that were refused, newest first"
+  refusedSignIns(
+    "How far back to look"
+    days: Int = 1,
+    "How many rows to return"
+    first: Int = 50
+  ): [SignInActivity]
+  "Every role, built in or defined here, with the permissions it carries"
+  roles: [RoleSummary]
+  "Every server group, with which targets are in it"
+  serverGroups: [ServerGroupSummary]
+  "The ways of signing in this instance offers, other than a password here"
+  signInOptions: [SignInOption]
+  "What this instance asks of whoever signs in"
+  signInPolicy: SignInPolicyState
+}
+
+extend type Mutation {
+  "Puts an account, or another group, inside a group"
+  addGroupMember(groupId: BigInteger, member: MembershipRequestInput): Boolean
+  "Says which local group a claim value puts somebody in"
+  addProviderGroupMapping(mapping: GroupMappingRequestInput, providerId: BigInteger): Boolean
+  "Puts a target in a server group"
+  addServerToGroup(connectionId: BigInteger, groupId: BigInteger): Boolean
+  "Adds an account; the password is set by whoever accepts the invitation"
+  createAccount(account: UserRequestInput): UserSummary
+  "Adds a group"
+  createGroup(group: GroupRequestInput): GroupSummary
+  "Adds a provider people can sign in through"
+  createIdentityProvider(provider: ProviderRequestInput): ProviderSummary
+  "Defines a role"
+  createRole(role: RoleRequestInput): RoleSummary
+  "Adds a server group, so a grant can name several targets at once"
+  createServerGroup(group: ServerGroupRequestInput): ServerGroupSummary
+  "Removes an account and every grant it held"
+  deleteAccount(id: BigInteger): Boolean
+  "Removes a group and every grant it held"
+  deleteGroup(id: BigInteger): Boolean
+  "Removes a provider; accounts it created stay, and can no longer sign in with it"
+  deleteIdentityProvider(id: BigInteger): Boolean
+  "Removes a role and every grant of it"
+  deleteRole(id: BigInteger): Boolean
+  "Removes a server group and every grant scoped to it"
+  deleteServerGroup(id: BigInteger): Boolean
+  "Gives a role to an account or a group, over an instance, group or target"
+  grant(grant: GrantRequestInput): GrantSummary
+  "Makes a link that lets an account set its own password"
+  inviteAccount(id: BigInteger): InvitationIssued
+  "Takes a member out of a group"
+  removeGroupMember(membershipId: BigInteger): Boolean
+  "Removes a mapping; it stops applying at the next sign-in through that provider"
+  removeProviderGroupMapping(mappingId: BigInteger): Boolean
+  "Takes a target out of a server group"
+  removeServerFromGroup(connectionId: BigInteger, groupId: BigInteger): Boolean
+  "Require a second factor of every local account, or stop requiring one"
+  requireSecondFactor(required: Boolean!): SignInPolicyState
+  "Takes a grant back; it stops applying on the holder's next request"
+  revoke(id: BigInteger): Boolean
+  "Changes an account"
+  updateAccount(account: UserRequestInput, id: BigInteger): UserSummary
+  "Changes a provider"
+  updateIdentityProvider(id: BigInteger, provider: ProviderRequestInput): ProviderSummary
+  "Changes what a role carries"
+  updateRole(id: BigInteger, role: RoleRequestInput): RoleSummary
+}
+
+enum Permission {
+  ACL_MANAGE
+  ACL_READ
+  ALERT_DELIVERY_MANAGE
+  ALERT_MANAGE
+  ANALYSIS_READ
+  AUDIT_READ
+  BACKUP_MANAGE
+  COMMANDS_WATCH
+  CONNECTION_CREATE
+  CONNECTION_DELETE
+  CONNECTION_EDIT
+  CONNECTION_VIEW
+  CONSOLE_RUN
+  CRYPTO_ROTATE
+  GRANTS_MANAGE
+  GROUPS_MANAGE
+  IDP_MANAGE
+  INSTANCE_DRAIN
+  INSTANCE_READ
+  KEYS_DELETE
+  KEYS_READ
+  KEYS_WRITE
+  MIGRATION_RUN
+  MONITORING_MANAGE
+  MONITORING_READ
+  POLICY_MANAGE
+  PUBSUB_PUBLISH
+  PUBSUB_SUBSCRIBE
+  SCHEDULE_MANAGE
+  SCRIPT_RUN
+  SERVER_CONFIGURE
+  SERVER_READ
+  TRANSFER_EXPORT
+  TRANSFER_IMPORT
+  TUNNEL_MANAGE
+  USERS_MANAGE
+  VALUES_READ
+  VALUES_WRITE
+}
+
+enum ProviderKind {
+  OAUTH2
+  OIDC
+}
+
+enum ScopeType {
+  CONNECTION
+  INSTANCE
+  SERVER_GROUP
+}
+
+enum SubjectType {
+  GROUP
+  USER
+}
+
+input GrantRequestInput {
+  roleId: BigInteger!
+  scopeId: BigInteger
+  scopeType: ScopeType!
+  subjectId: BigInteger!
+  subjectType: SubjectType!
+}
+
+input GroupMappingRequestInput {
+  claimValue: String!
+  groupId: BigInteger!
+}
+
+input GroupRequestInput {
+  description: String
+  name: String!
+}
+
+input MembershipRequestInput {
+  groupId: BigInteger
+  userId: BigInteger
+}
+
+input ProviderRequestInput {
+  authorizationEndpoint: String
+  autoCreateUsers: Boolean
+  clientId: String!
+  clientSecret: String
+  displayName: String!
+  emailClaim: String
+  enabled: Boolean
+  groupsClaim: String
+  issuer: String
+  key: String!
+  kind: ProviderKind!
+  nameClaim: String
+  scopes: String
+  sortOrder: Int
+  subjectClaim: String
+  tokenEndpoint: String
+  userInfoEndpoint: String
+  usernameClaim: String
+}
+
+input RoleRequestInput {
+  description: String
+  name: String!
+  permissions: [Permission]!
+}
+
+input ServerGroupRequestInput {
+  description: String
+  name: String!
+  parentId: BigInteger
+}
+
+input UserRequestInput {
+  displayName: String
+  email: String
+  enabled: Boolean
+  password: String
+  username: String!
+}
+
+type AuthState {
+  authenticated: Boolean!
+  mustEnrolSecondFactor: Boolean!
+  needsSetup: Boolean!
+  securityEnabled: Boolean!
+  username: String
+}
+
+type CallerAccess {
+  instance: [Permission]
+  securityEnabled: Boolean!
+  targets: [TargetPermissions]
+  username: String
+}
+
+type GrantSummary {
+  "ISO-8601"
+  grantedAt: DateTime
+  grantedBy: String
+  id: BigInteger
+  roleId: BigInteger
+  roleName: String
+  scopeId: BigInteger
+  scopeName: String
+  scopeType: ScopeType
+  subjectId: BigInteger
+  subjectName: String
+  subjectType: SubjectType
+}
+
+type GroupMappingSummary {
+  claimValue: String
+  groupId: BigInteger
+  groupName: String
+  id: BigInteger
+}
+
+type GroupSummary {
+  description: String
+  id: BigInteger
+  managedBy: String
+  memberGroups: [String]
+  memberUsers: [String]
+  name: String
+}
+
+type InvitationIssued {
+  address: String
+  link: String
+  mailed: Boolean!
+}
+
+type PermissionInfo {
+  id: String
+  level: String
+  name: String
+}
+
+type ProviderSummary {
+  authorizationEndpoint: String
+  autoCreateUsers: Boolean!
+  clientId: String
+  displayName: String
+  emailClaim: String
+  enabled: Boolean!
+  endpointsDiscovered: Boolean!
+  groupMappings: [GroupMappingSummary]
+  groupsClaim: String
+  hasClientSecret: Boolean!
+  id: BigInteger
+  issuer: String
+  key: String
+  kind: ProviderKind
+  nameClaim: String
+  redirectUri: String
+  scopes: String
+  sortOrder: Int!
+  subjectClaim: String
+  tokenEndpoint: String
+  userInfoEndpoint: String
+  usernameClaim: String
+}
+
+type RoleSummary {
+  builtIn: Boolean!
+  description: String
+  id: BigInteger
+  name: String
+  permissions: [Permission]
+}
+
+type ServerGroupSummary {
+  connectionIds: [BigInteger]
+  description: String
+  id: BigInteger
+  name: String
+  parentId: BigInteger
+}
+
+type SessionSummary {
+  current: Boolean!
+  "ISO-8601"
+  expiresAt: DateTime
+  id: String
+  "ISO-8601"
+  issuedAt: DateTime
+  "ISO-8601"
+  lastSeenAt: DateTime
+  network: String
+  userAgent: String
+}
+
+type SignInActivity {
+  "What was unusual about it, usually nothing"
+  anomalies: [String]!
+  "ISO-8601"
+  at: DateTime!
+  "Two letters, where this instance can place an address"
+  country: String
+  id: BigInteger!
+  "A password here, or the provider that vouched"
+  method: String!
+  "The network it came from, not the address"
+  network: String
+  "How it ended"
+  outcome: String!
+  "The browser as it described itself"
+  userAgent: String
+  "The name as it was typed"
+  username: String!
+}
+
+type SignInOption {
+  displayName: String
+  key: String
+  kind: ProviderKind
+}
+
+type SignInPolicyState {
+  accountsOwingAFactor: BigInteger!
+  "ISO-8601"
+  changedAt: DateTime
+  changedBy: String
+  secondFactorRequired: Boolean!
+}
+
+type TargetPermissions {
+  connectionId: BigInteger
+  permissions: [Permission]
+}
+
+type UserSummary {
+  displayName: String
+  email: String
+  enabled: Boolean!
+  groups: [String]
+  hasPassword: Boolean!
+  id: BigInteger
+  "ISO-8601"
+  lastSeenAt: DateTime
+  provider: String
+  username: String
+}

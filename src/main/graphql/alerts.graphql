@@ -1,0 +1,221 @@
+# Rules, and what they had to say.
+#
+# Part of Keydra's GraphQL schema, checked in so a change to the API arrives as a
+# change to a file somebody reads. Generated from io.keydra.alerts by
+# scripts/split-schema.py; SchemaDriftTest fails when this and the server disagree.
+
+extend type Query {
+  "The channels a firing rule can send word through"
+  alertDeliveries: [AlertDeliverySummary]
+  "What has fired and what has cleared, newest first"
+  alertEvents(
+    "One rule's history, or every rule's"
+    ruleId: BigInteger
+  ): [AlertEventSummary]
+  "The metrics a rule can watch, each with its unit"
+  alertMetrics: [AlertMetricInfo]
+  "The rules, with what each one is reading now and which state it is in"
+  alertRules: [AlertRuleSummary]
+}
+
+extend type Mutation {
+  "Sends a test message through a channel and reports what happened"
+  checkAlertDelivery(id: BigInteger): AlertDeliveryCheck
+  "Adds a channel for firing rules to send word through"
+  createAlertDelivery(delivery: AlertDeliveryRequestInput): AlertDeliverySummary
+  "Adds a rule watching one metric on one target"
+  createAlertRule(
+    "The target the rule watches"
+    connectionId: BigInteger,
+    rule: AlertRuleRequestInput
+  ): AlertRuleSummary
+  "Removes a channel"
+  deleteAlertDelivery(id: BigInteger): Boolean
+  "Removes a rule"
+  deleteAlertRule(
+    "The target the rule watches"
+    connectionId: BigInteger,
+    id: BigInteger
+  ): Boolean
+  "Changes a channel"
+  updateAlertDelivery(delivery: AlertDeliveryRequestInput, id: BigInteger): AlertDeliverySummary
+  "Changes a rule"
+  updateAlertRule(
+    "The target the rule watches"
+    connectionId: BigInteger,
+    id: BigInteger,
+    rule: AlertRuleRequestInput
+  ): AlertRuleSummary
+}
+
+enum AlertBasis {
+  ABSOLUTE
+  BASELINE
+}
+
+enum AlertMetric {
+  CONNECTED_CLIENTS
+  EVICTED_KEYS_PER_MINUTE
+  EXPIRED_KEYS_PER_MINUTE
+  HIT_RATIO_PERCENT
+  KEY_COUNT
+  MEMORY_FILL_PERCENT
+  MEMORY_USED_BYTES
+  NO_ANSWER
+  OPS_PER_SECOND
+  UPTIME_SECONDS
+}
+
+enum AlertState {
+  FIRING
+  OK
+  PENDING
+}
+
+enum Comparison {
+  ABOVE
+  BELOW
+}
+
+enum DeliveryKind {
+  EMAIL
+  SLACK
+  TELEGRAM
+  WEBHOOK
+  WHATSAPP
+}
+
+enum DeliveryOutcome {
+  FAILED
+  NONE
+  SENDING
+  SENT
+}
+
+enum EventKind {
+  CLEARED
+  FIRED
+}
+
+enum Unit {
+  BYTES
+  CONDITION
+  COUNT
+  PERCENT
+  PER_MINUTE
+  PER_SECOND
+  SECONDS
+}
+
+input AlertDeliveryRequestInput {
+  apiToken: String
+  enabled: Boolean
+  fromAddress: String
+  headerName: String
+  headerValue: String
+  kind: DeliveryKind!
+  name: String!
+  password: String
+  recipient: String
+  senderId: String
+  smtpHost: String
+  smtpPort: Int
+  smtpTls: Boolean
+  toAddresses: String
+  url: String
+  username: String
+}
+
+input AlertRuleRequestInput {
+  baselineOffsetSeconds: Int
+  baselineWindowSeconds: Int
+  basis: AlertBasis
+  comparison: Comparison
+  connectionId: BigInteger!
+  deliveryIds: [BigInteger]
+  enabled: Boolean
+  forSeconds: Int
+  metric: AlertMetric!
+  name: String!
+  threshold: Float
+}
+
+type AlertDeliveryCheck {
+  detail: String
+  working: Boolean!
+}
+
+type AlertDeliverySummary {
+  describedAs: String
+  enabled: Boolean!
+  fromAddress: String
+  hasApiToken: Boolean!
+  hasPassword: Boolean!
+  hasSecret: Boolean!
+  hasUrl: Boolean!
+  headerName: String
+  id: BigInteger
+  kind: DeliveryKind
+  name: String
+  recipient: String
+  senderId: String
+  smtpHost: String
+  smtpPort: Int
+  smtpTls: Boolean!
+  toAddresses: String
+  urlHost: String
+  usedByRules: Int!
+  username: String
+}
+
+type AlertEventSummary {
+  "ISO-8601"
+  at: DateTime
+  connectionId: BigInteger
+  connectionName: String
+  deliveryDetail: String
+  deliveryName: String
+  deliveryOutcome: DeliveryOutcome
+  id: BigInteger
+  kind: EventKind
+  metric: AlertMetric
+  reading: Float
+  ruleId: BigInteger
+  ruleName: String
+  threshold: Float!
+}
+
+type AlertMetricInfo {
+  condition: Boolean!
+  name: String
+  unit: Unit
+}
+
+type AlertRuleSummary {
+  baseline: Float
+  baselineOffsetSeconds: Int!
+  baselineWindowSeconds: Int!
+  basis: AlertBasis
+  comparison: Comparison
+  connectionId: BigInteger
+  connectionName: String
+  "ISO-8601"
+  createdAt: DateTime
+  createdBy: String
+  deliveryIds: [BigInteger]
+  deliveryNames: [String]
+  enabled: Boolean!
+  forSeconds: Int!
+  id: BigInteger
+  metric: AlertMetric
+  name: String
+  "ISO-8601"
+  readAt: DateTime
+  reading: Float
+  "ISO-8601"
+  since: DateTime
+  state: AlertState
+  threshold: Float!
+  unit: Unit
+  watching: Boolean!
+}

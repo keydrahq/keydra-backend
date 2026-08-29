@@ -1,0 +1,34 @@
+# The analysis domain.
+#
+# Part of Keydra's GraphQL schema, checked in so a change to the API arrives as a
+# change to a file somebody reads. Generated from io.keydra.analysis by
+# scripts/split-schema.py; SchemaDriftTest fails when this and the server disagree.
+
+type ExpiryBand {
+  band: String
+  bytes: BigInteger!
+  keys: BigInteger!
+}
+
+type KeyspaceReport {
+  bytesSampled: BigInteger!
+  expiry: [ExpiryBand]
+  keysInDatabase: BigInteger!
+  largest: [KeySize]
+  namespaces: [NamespaceUsage]
+  sampled: Int!
+  types: [TypeUsage]
+}
+
+type NamespaceUsage {
+  bytes: BigInteger!
+  keys: BigInteger!
+  neverExpires: BigInteger!
+  prefix: String
+}
+
+type TypeUsage {
+  bytes: BigInteger!
+  keys: BigInteger!
+  type: String
+}

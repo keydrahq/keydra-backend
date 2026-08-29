@@ -1,0 +1,100 @@
+# What was done, by whom, and whether it was allowed.
+#
+# Part of Keydra's GraphQL schema, checked in so a change to the API arrives as a
+# change to a file somebody reads. Generated from io.keydra.security by
+# scripts/split-schema.py; SchemaDriftTest fails when this and the server disagree.
+
+extend type Query {
+  "Every kind of action that has been recorded, for a filter to offer"
+  auditActions: [String]
+  "A page of the audit log, newest first"
+  auditLog(
+    "Only this kind of action"
+    action: String,
+    "Only this account's actions"
+    actor: String,
+    "Resume after this cursor"
+    after: String,
+    "Only actions against this target"
+    connectionId: BigInteger,
+    "How many rows to return"
+    first: Int = 20,
+    "Only what happened after this moment (ISO-8601)"
+    since: DateTime
+  ): AuditConnection
+  "What the caller may do, over Keydra itself and over each target"
+  effectivePermissions: CallerAccess
+  "Which key the stored secrets are under, and how many are not"
+  encryptionStatus: RotationStatus
+  "Who is asking, the roles they hold, and whether access is being enforced"
+  me: CurrentUser
+  "How many browsers there are to page through"
+  mySessionCount: BigInteger
+  "Every browser that can act as you right now, the one reading this first"
+  mySessions(
+    "How many rows to return"
+    first: Int = 20,
+    "How many to skip"
+    offset: Int = 0
+  ): [SessionSummary]
+}
+
+extend type Mutation {
+  "Ends every session but this one, and answers how many"
+  endOtherSessions: Int
+  "Ends one of your sessions; it stops on that browser's next request"
+  endSession(id: String): Boolean
+  "Rewrites every stored secret under the current key"
+  reencryptSecrets: RotationResult
+}
+
+input AclUserRequestInput {
+  rules: [String]
+  username: String!
+}
+
+type AuditConnection {
+  "Each row with its position in the log"
+  edges: [AuditEdge]!
+  "The same rows, without their positions"
+  nodes: [AuditEntry]!
+  "Where this page sits within the whole"
+  pageInfo: PageInfo!
+  "How many match, across every page"
+  totalCount: Int!
+}
+
+type AuditEdge {
+  "Resume after this row by passing it as `after`"
+  cursor: String!
+  "The entry"
+  node: AuditEntry!
+}
+
+type AuditEntry {
+  action: String
+  actor: String
+  "ISO-8601"
+  at: DateTime
+  connectionId: BigInteger
+  detail: String
+  id: BigInteger
+  succeeded: Boolean!
+}
+
+type CurrentUser {
+  name: String
+  roles: [String]
+  securityEnabled: Boolean!
+}
+
+type RotationResult {
+  currentKeyId: String
+  rotated: BigInteger!
+}
+
+type RotationStatus {
+  currentKeyId: String
+  onCurrentKey: BigInteger!
+  onOtherKeys: BigInteger!
+}

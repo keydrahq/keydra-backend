@@ -1,0 +1,55 @@
+name: Feature request
+description: Something Keydra should be able to do and cannot
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What you are trying to do
+      description: >
+        The situation rather than the feature. A described problem gets a better answer than
+        a described solution, because somebody may know a cheaper way to solve it.
+      placeholder: |
+        Two of us share an on-call rota. When one of us empties a staging cache the other
+        finds out from the empty cache, and there is no way to make the operation wait.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you think it should do
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What you do instead today
+      description: A workaround, another tool, or nothing.
+
+  - type: dropdown
+    id: target
+    attributes:
+      label: Which store this is about
+      multiple: true
+      options:
+        - Redis
+        - Valkey
+        - KeyDB
+        - Dragonfly
+        - Garnet
+        - Aerospike
+        - TiKV
+        - Any of them
+        - Not about a target
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before you file
+      options:
+        - label: I have searched the open issues for the same request
+          required: true

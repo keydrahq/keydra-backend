@@ -1,0 +1,116 @@
+# The servers Keydra manages, and how each one is doing.
+#
+# Part of Keydra's GraphQL schema, checked in so a change to the API arrives as a
+# change to a file somebody reads. Generated from io.keydra.connections by
+# scripts/split-schema.py; SchemaDriftTest fails when this and the server disagree.
+
+extend type Query {
+  "One target, by id"
+  connection(id: BigInteger): ConnectionResponse
+  "Every target the caller can see, with its last known status"
+  connections: [ConnectionResponse]
+}
+
+extend type Mutation {
+  "Opens a connection to the target and reports what came back"
+  checkConnection(
+    "What to try, or nothing for the saved one as it is"
+    connection: ConnectionRequestInput,
+    "A saved target to take an unchanged password from"
+    id: BigInteger
+  ): ConnectionStatus
+  "Adds a target"
+  createConnection(connection: ConnectionRequestInput): ConnectionResponse
+  "Removes a target and everything Keydra kept about it"
+  deleteConnection(id: BigInteger): Boolean
+  "Changes a target"
+  updateConnection(connection: ConnectionRequestInput, id: BigInteger): ConnectionResponse
+}
+
+enum ConnectionState {
+  CONNECTING
+  DOWN
+  UNKNOWN
+  UP
+}
+
+enum ConnectionType {
+  CLUSTER
+  SENTINEL
+  STANDALONE
+}
+
+enum ServerFlavor {
+  AEROSPIKE
+  DRAGONFLY
+  GARNET
+  KEYDB
+  REDIS
+  TIKV
+  UNKNOWN
+  VALKEY
+}
+
+input ConnectionRequestInput {
+  consoleAllowed: [String]
+  database: Int!
+  engine: EngineType
+  flavor: ServerFlavor
+  guarded: Boolean!
+  host: String!
+  name: String!
+  namespace: String
+  notes: String
+  password: String
+  port: Int!
+  requiresApproval: Boolean!
+  sentinelMasterName: String
+  tls: Boolean!
+  tlsCaCert: String
+  tlsClientCert: String
+  tlsClientKey: String
+  tlsClientKeyPassphrase: String
+  tunnelId: BigInteger
+  type: ConnectionType!
+  username: String
+}
+
+type ConnectionResponse {
+  consoleAllowed: [String]
+  database: Int!
+  engine: EngineType
+  flavor: ServerFlavor
+  guarded: Boolean!
+  hasClientKey: Boolean!
+  hasClientKeyPassphrase: Boolean!
+  hasPassword: Boolean!
+  host: String
+  id: BigInteger
+  name: String
+  namespace: String
+  notes: String
+  port: Int!
+  requiresApproval: Boolean!
+  sentinelMasterName: String
+  status: ConnectionStatus
+  tls: Boolean!
+  tlsCaCert: String
+  tlsClientCert: String
+  tunnelId: BigInteger
+  type: ConnectionType
+  username: String
+}
+
+type ConnectionStatus {
+  "ISO-8601"
+  checkedAt: DateTime
+  message: String
+  server: ServerInfo
+  state: ConnectionState
+}
+
+type ServerInfo {
+  flavor: String
+  mode: String
+  version: String
+}

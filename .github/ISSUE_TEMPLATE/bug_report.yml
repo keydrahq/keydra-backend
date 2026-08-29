@@ -1,0 +1,90 @@
+name: Bug report
+description: Something behaves differently from what it says it does
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time.
+
+        **If this is a security problem, do not file it here.** Use *Security* → *Report a
+        vulnerability* instead, or read [SECURITY.md](../blob/main/SECURITY.md).
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you did, and what Keydra did instead of what you expected.
+      placeholder: |
+        I opened the key browser on a Valkey target with about two million keys.
+        The count stopped at 10,000 and the page said nothing about why.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: How to reproduce it
+      description: Enough for somebody else to see the same thing.
+      placeholder: |
+        1. Add a connection to a Valkey with more than 10,000 keys
+        2. Open Keys
+        3. Watch the counter
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: What the About page says, or the commit you built from.
+      placeholder: 0.0.1-SNAPSHOT, commit abc1234
+    validations:
+      required: true
+
+  - type: dropdown
+    id: target
+    attributes:
+      label: Which store
+      description: The one the problem is about. Choose several if it happens on more than one.
+      multiple: true
+      options:
+        - Redis
+        - Valkey
+        - KeyDB
+        - Dragonfly
+        - Garnet
+        - Aerospike
+        - TiKV
+        - Not about a target
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: How it is running
+      description: >
+        The image or a source build, how many instances, whether it is behind a proxy,
+        and whether `KEYDRA_SECURITY_ENABLED` is on.
+      placeholder: |
+        One instance from quay.io/keydrahq/keydra:latest, behind nginx,
+        security enforced, PostgreSQL 17, Valkey 9 target through an SSH tunnel.
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Anything the log said
+      description: >
+        A stack trace is worth more than a description of one. **Read it before you paste
+        it** — a log line can carry a key name, and a key name is your data.
+      render: text

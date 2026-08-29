@@ -1,0 +1,168 @@
+# Where backups go, and what is already there.
+#
+# Part of Keydra's GraphQL schema, checked in so a change to the API arrives as a
+# change to a file somebody reads. Generated from io.keydra.backup by
+# scripts/split-schema.py; SchemaDriftTest fails when this and the server disagree.
+
+extend type Query {
+  "One backup's header, read without downloading the whole file"
+  backup(
+    "The target this would be restored into"
+    connectionId: BigInteger,
+    "Which destination to read"
+    destinationId: BigInteger,
+    "The file's name in that destination"
+    name: String
+  ): BackupSummary
+  "Every destination, without the credentials they hold"
+  backupDestinations: [DestinationSummary]
+  "What is already in a destination, newest first"
+  backups(
+    "The target these would be restored into"
+    connectionId: BigInteger,
+    "Which destination to read"
+    destinationId: BigInteger,
+    "Only names beginning with this"
+    prefix: String
+  ): [BackupSummary]
+}
+
+extend type Mutation {
+  "Reaches the destination and reports what happened"
+  checkBackupDestination(
+    destination: DestinationRequestInput,
+    "A saved destination to take unchanged secrets from"
+    id: BigInteger
+  ): DestinationCheck
+  "Adds a destination for backups to be written to"
+  createBackupDestination(destination: DestinationRequestInput): DestinationSummary
+  "Removes a destination"
+  deleteBackupDestination(id: BigInteger): Boolean
+  "Makes a key pair; the private half is shown once and never stored"
+  generateBackupKeyPair: KeyPair
+  "Writes a backup's keys into a target"
+  restoreBackup(
+    "The target to write into"
+    connectionId: BigInteger,
+    restore: RestoreRequestInput
+  ): ImportResult
+  "Writes a backup of a target into a destination"
+  takeBackup(
+    "The target to read"
+    connectionId: BigInteger,
+    "Where to write it"
+    destinationId: BigInteger,
+    "How many previous backups to keep"
+    keepLast: Int,
+    "A glob, or every key"
+    match: String,
+    "A folder within the destination"
+    prefix: String
+  ): BackupTaken
+  "Changes a destination"
+  updateBackupDestination(destination: DestinationRequestInput, id: BigInteger): DestinationSummary
+}
+
+enum DestinationKind {
+  AZURE_BLOB
+  CUSTOM
+  FTP
+  GCS
+  LOCAL
+  S3
+  SFTP
+}
+
+input DestinationRequestInput {
+  accessKey: String
+  enabled: Boolean
+  encryptionPassphrase: String
+  endpoint: String
+  kind: DestinationKind!
+  location: String
+  name: String!
+  passphrase: String
+  path: String
+  pathStyle: Boolean
+  port: Int
+  privateKey: String
+  recipients: [RecipientRequestInput]
+  region: String
+  secretKey: String
+  tls: Boolean
+  tunnelId: BigInteger
+}
+
+input RecipientRequestInput {
+  label: String!
+  publicKey: String!
+}
+
+input RestoreRequestInput {
+  destinationId: BigInteger!
+  name: String!
+  privateKey: String
+  replace: Boolean!
+}
+
+type BackupHeader {
+  connection: String
+  connectionId: BigInteger
+  keydra: Int
+  match: String
+  "ISO-8601"
+  takenAt: DateTime
+}
+
+type BackupSummary {
+  encrypted: Boolean!
+  header: BackupHeader
+  "ISO-8601"
+  modifiedAt: DateTime
+  name: String
+  size: BigInteger!
+}
+
+type BackupTaken {
+  destination: String
+  keys: BigInteger!
+  name: String
+  removed: [String]
+  size: BigInteger!
+}
+
+type DestinationCheck {
+  message: String
+  reachable: Boolean!
+}
+
+type DestinationSummary {
+  accessKey: String
+  describedAs: String
+  enabled: Boolean!
+  encrypts: Boolean!
+  endpoint: String
+  hasPrivateKey: Boolean!
+  hasSecret: Boolean!
+  id: BigInteger
+  kind: DestinationKind
+  location: String
+  name: String
+  path: String
+  pathStyle: Boolean!
+  port: Int
+  recipients: [RecipientSummary]
+  region: String
+  tls: Boolean!
+  tunnelId: BigInteger
+}
+
+type KeyPair {
+  privateKey: String
+  publicKey: String
+}
+
+type RecipientSummary {
+  label: String
+  publicKey: String
+}

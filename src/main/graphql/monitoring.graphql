@@ -1,0 +1,82 @@
+# What a target is doing, and what it did.
+#
+# Part of Keydra's GraphQL schema, checked in so a change to the API arrives as a
+# change to a file somebody reads. Generated from io.keydra.monitoring by
+# scripts/split-schema.py; SchemaDriftTest fails when this and the server disagree.
+
+extend type Query {
+  "The biggest keys found by sampling the keyspace"
+  biggestKeys(
+    connectionId: BigInteger,
+    "How many keys to look at"
+    sample: Int = 1000,
+    "How many to report"
+    top: Int = 20
+  ): BigKeysReport
+  "Who is connected to the target right now"
+  clients(connectionId: BigInteger): [ClientConnection]
+  "One reading from every target the caller can see"
+  fleet: [TargetSample]
+  "Whether a target is being sampled, and since when"
+  monitoring(connectionId: BigInteger): MonitoringState
+  "Readings between two moments, evenly divided into points"
+  monitoringHistory(
+    connectionId: BigInteger,
+    "The start of the window (ISO-8601)"
+    from: DateTime,
+    "How many points to divide it into"
+    points: Int = 240,
+    "The end of the window (ISO-8601)"
+    to: DateTime
+  ): MetricsHistory
+  "One reading, taken now"
+  monitoringSample(connectionId: BigInteger): MetricsSample
+  "The commands the server itself recorded as slow"
+  slowLog(
+    connectionId: BigInteger,
+    "How many entries to read"
+    limit: Int = 50
+  ): [SlowCommand]
+}
+
+extend type Mutation {
+  "Empties the server's own slow log"
+  clearSlowLog(connectionId: BigInteger): Boolean
+  "Closes one client's connection to the target"
+  killClient(clientId: String, connectionId: BigInteger): Boolean
+  "Starts sampling a target on a clock"
+  startMonitoring(connectionId: BigInteger): MonitoringState
+  "Stops sampling a target"
+  stopMonitoring(connectionId: BigInteger): Boolean
+}
+
+enum Source {
+  MEMORY
+  NONE
+  STORE
+}
+
+type BigKeysReport {
+  largest: [KeySize]
+  sampled: Int!
+  totalBytes: BigInteger!
+}
+
+type MetricsHistory {
+  samples: [MetricsSample]
+  source: Source
+  stepSeconds: Int!
+}
+
+type MonitoringState {
+  durable: Boolean!
+  enabled: Boolean!
+  heldByRule: Boolean!
+  intervalSeconds: Int!
+  samples: [MetricsSample]
+}
+
+type TargetSample {
+  connectionId: BigInteger
+  sample: MetricsSample
+}

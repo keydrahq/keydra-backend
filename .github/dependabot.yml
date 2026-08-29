@@ -1,0 +1,44 @@
+# Dependency updates, grouped so a week is one pull request rather than thirty.
+#
+# Weekly rather than daily: this repository has one maintainer, and a queue nobody can
+# read is the same as no updates at all.
+version: 2
+
+updates:
+  - package-ecosystem: maven
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      # Quarkus releases its whole platform together, so one at a time is thirty
+      # pull requests that only pass together.
+      quarkus:
+        patterns:
+          - 'io.quarkus:*'
+          - 'io.quarkus.platform:*'
+      testing:
+        patterns:
+          - 'org.junit*'
+          - 'io.rest-assured:*'
+          - 'org.testcontainers:*'
+          - 'org.assertj:*'
+          - 'org.mockito:*'
+      # Everything else, by how much it can break.
+      minor-and-patch:
+        update-types: [minor, patch]
+    labels:
+      - dependencies
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      actions:
+        patterns: ['*']
+    labels:
+      - dependencies
+      - ci

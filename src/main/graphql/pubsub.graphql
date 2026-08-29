@@ -1,0 +1,37 @@
+# The pubsub domain.
+#
+# Part of Keydra's GraphQL schema, checked in so a change to the API arrives as a
+# change to a file somebody reads. Generated from io.keydra.pubsub by
+# scripts/split-schema.py; SchemaDriftTest fails when this and the server disagree.
+
+extend type Query {
+  "What this target is being listened to for, or nothing"
+  subscription(connectionId: BigInteger): ChannelSubscription
+}
+
+extend type Mutation {
+  "Sends a message to a channel and answers how many subscribers took it"
+  publish(channel: String, connectionId: BigInteger, payload: String): PublishResult
+  "Starts listening to channels or patterns on a target"
+  subscribe(connectionId: BigInteger, subscription: SubscriptionRequestInput): ChannelSubscription
+  "Stops listening; answers whether anything was listening"
+  unsubscribe(connectionId: BigInteger): Boolean
+}
+
+input SubscriptionRequestInput {
+  channels: [String]
+  patterns: [String]
+}
+
+type ChannelSubscription {
+  channels: [String]
+  connectionId: BigInteger
+  messagesReceived: BigInteger!
+  patterns: [String]
+  "ISO-8601"
+  since: DateTime
+}
+
+type PublishResult {
+  receivers: BigInteger!
+}

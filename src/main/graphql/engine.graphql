@@ -1,0 +1,147 @@
+# The engine domain.
+#
+# Part of Keydra's GraphQL schema, checked in so a change to the API arrives as a
+# change to a file somebody reads. Generated from io.keydra.engine by
+# scripts/split-schema.py; SchemaDriftTest fails when this and the server disagree.
+
+enum Direction {
+  IN
+  OUT
+}
+
+enum EngineType {
+  AEROSPIKE
+  RESP
+  TIKV
+}
+
+type AclUser {
+  channelPatterns: [String]
+  commands: String
+  enabled: Boolean!
+  hasPassword: Boolean!
+  keyPatterns: [String]
+  rules: [String]
+  username: String
+}
+
+type Capabilities {
+  detected: Boolean!
+  features: [String]
+}
+
+type ClientConnection {
+  address: String
+  ageSeconds: BigInteger
+  database: Int
+  id: String
+  idleSeconds: BigInteger
+  lastCommand: String
+  name: String
+}
+
+type ClusterHealth {
+  currentEpoch: BigInteger!
+  knownNodes: Int!
+  serving: Boolean!
+  size: Int!
+  slotsAssigned: Int!
+  slotsFail: Int!
+  slotsOk: Int!
+  slotsPfail: Int!
+  state: String
+}
+
+type ClusterNode {
+  address: String
+  flags: [String]
+  id: String
+  linkState: String
+  migrations: [SlotMigration]
+  primaryId: String
+  role: String
+  self: Boolean!
+  slots: [SlotRange]
+}
+
+type Database {
+  expires: BigInteger!
+  index: Int!
+  keys: BigInteger!
+}
+
+type KeySize {
+  bytes: BigInteger!
+  elements: BigInteger
+  key: String
+  ttlMillis: BigInteger!
+  type: String
+}
+
+type MetricsSample {
+  "ISO-8601"
+  at: DateTime
+  connectedClients: BigInteger
+  evictedKeys: BigInteger
+  expiredKeys: BigInteger
+  keyCount: BigInteger
+  keyspaceHits: BigInteger
+  keyspaceMisses: BigInteger
+  memoryMaxBytes: BigInteger
+  memoryPeakBytes: BigInteger
+  memoryUsedBytes: BigInteger
+  opsPerSecond: BigInteger
+  totalCommands: BigInteger
+  uptimeSeconds: BigInteger
+}
+
+type PersistenceState {
+  changesSinceSave: BigInteger!
+  inProgress: Boolean!
+  lastSaveFailed: Boolean!
+  lastSaveSeconds: BigInteger!
+  logEnabled: Boolean!
+  snapshotEnabled: Boolean!
+  snapshotFile: String
+}
+
+type Replica {
+  address: String
+  linkStatus: String
+  status: String
+}
+
+type SentinelMaster {
+  address: String
+  name: String
+  quorum: Int
+  replicas: [Replica]
+  status: String
+}
+
+type ServerSetting {
+  name: String
+  unset: Boolean!
+  value: String
+}
+
+type SlotMigration {
+  direction: Direction
+  peerId: String
+  slot: Int!
+}
+
+type SlotRange {
+  from: Int!
+  to: Int!
+}
+
+type SlowCommand {
+  arguments: [String]
+  "ISO-8601"
+  at: DateTime
+  client: String
+  clientName: String
+  durationMicros: BigInteger!
+  id: BigInteger!
+}

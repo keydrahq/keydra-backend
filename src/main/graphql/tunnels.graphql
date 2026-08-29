@@ -1,0 +1,57 @@
+# The jump hosts Keydra reaches targets through.
+#
+# Part of Keydra's GraphQL schema, checked in so a change to the API arrives as a
+# change to a file somebody reads. Generated from io.keydra.tunnels by
+# scripts/split-schema.py; SchemaDriftTest fails when this and the server disagree.
+
+extend type Query {
+  "Every jump host, without the keys they hold"
+  tunnels: [TunnelSummary]
+}
+
+extend type Mutation {
+  "Opens the tunnel and reports what happened"
+  checkTunnel(
+    "A saved jump host to take unchanged secrets from"
+    id: BigInteger,
+    "What to try, or nothing for the saved one as it is"
+    tunnel: TunnelRequestInput
+  ): TunnelCheck
+  "Adds a jump host"
+  createTunnel(tunnel: TunnelRequestInput): TunnelSummary
+  "Removes a jump host"
+  deleteTunnel(id: BigInteger): Boolean
+  "Changes a jump host"
+  updateTunnel(id: BigInteger, tunnel: TunnelRequestInput): TunnelSummary
+}
+
+input TunnelRequestInput {
+  host: String!
+  hostKeyFingerprint: String
+  name: String!
+  passphrase: String
+  password: String
+  port: Int!
+  privateKey: String
+  username: String!
+}
+
+type TunnelCheck {
+  fingerprint: String
+  message: String
+  reachable: Boolean!
+}
+
+type TunnelSummary {
+  describedAs: String
+  hasPassword: Boolean!
+  hasPrivateKey: Boolean!
+  host: String
+  hostKeyFingerprint: String
+  id: BigInteger
+  name: String
+  port: Int!
+  usedBy: BigInteger!
+  username: String
+  verifiesHostKey: Boolean!
+}

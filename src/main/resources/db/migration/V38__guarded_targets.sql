@@ -1,0 +1,15 @@
+-- A target whose name has to be typed before anything can empty it.
+--
+-- Every destructive operation was already behind a permission and behind a dialog, and neither asks
+-- the question the mistake is made on. A permission answers "may this person delete keys" — yes,
+-- that is their job. A dialog answers "did you mean to press that" — also yes. Neither asks whether
+-- this is the target they think it is, which is what goes wrong when two tabs are open on two
+-- servers with the same namespaces.
+--
+-- The dialog was also only ever in the browser, so anything holding keys:delete could purge a
+-- keyspace with one request and no confirmation at all.
+--
+-- DEFAULT FALSE and NOT NULL: turning this on for every existing target would break every
+-- automation that has ever called those endpoints, which is a worse failure than the one being
+-- prevented and would arrive by surprise.
+ALTER TABLE connection_profile ADD COLUMN guarded BOOLEAN NOT NULL DEFAULT FALSE;

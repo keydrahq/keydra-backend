@@ -1,0 +1,255 @@
+# Keys, and moving them from one server to another.
+#
+# Part of Keydra's GraphQL schema, checked in so a change to the API arrives as a
+# change to a file somebody reads. Generated from io.keydra.keys by
+# scripts/split-schema.py; SchemaDriftTest fails when this and the server disagree.
+
+extend type Query {
+  "Whether a target announces its changes, and whether anybody is listening"
+  keyspaceWatch(
+    connectionId: BigInteger,
+    "Which database"
+    database: Int = 0
+  ): KeyspaceWatchState
+  "A page of migrations, newest first, filtered to what the caller can see"
+  migrations(
+    "Resume after this cursor"
+    after: String,
+    "Newest or largest first"
+    descending: Boolean = true,
+    "How many rows to return"
+    first: Int = 20,
+    "Match either target's name"
+    search: String,
+    "Which column to order by"
+    sort: MigrationSort = STARTED,
+    "Only migrations in this state"
+    state: State
+  ): MigrationConnection
+  "One level of the keyspace, grouped by a delimiter"
+  namespaceTree(
+    connectionId: BigInteger,
+    "How many keys to walk"
+    count: Int = 5000,
+    "Which database, or the profile's own"
+    database: Int,
+    "What separates a folder from a key"
+    delimiter: String = ":",
+    "The branch to open, or the root"
+    prefix: String
+  ): [NamespaceNode]
+}
+
+extend type Mutation {
+  "Asks a target to announce its changes, keeping whatever its setting already said"
+  announceKeyspaceChanges(connectionId: BigInteger, database: Int = 0): KeyspaceWatchState
+  "Stops a migration; what has moved stays moved"
+  cancelMigration(connectionId: BigInteger, jobId: String): Boolean
+  "Copies a key, here or to another target"
+  copyKey(connectionId: BigInteger, copy: CopyKeyRequestInput, database: Int): KeyOperationResult
+  "Removes the named keys"
+  deleteKeys(
+    "The target's own name, where the target is guarded"
+    confirmTarget: String,
+    connectionId: BigInteger,
+    database: Int,
+    keys: [String]
+  ): KeyOperationResult
+  "Sets or clears a key's time to live"
+  expireKey(connectionId: BigInteger, database: Int, expire: ExpireKeyRequestInput): KeyOperationResult
+  "Takes or renews a lease on a target's changes"
+  holdKeyspaceWatch(
+    connectionId: BigInteger,
+    database: Int = 0,
+    "Keys this lease is looking at, which are always reported when they change however full the sample was. Null or empty for a caller that only wants to know the list moved."
+    keys: [String],
+    "The lease to renew, or null to take one"
+    lease: String
+  ): KeyspaceWatchState
+  "Writes keys into a target from what was exported"
+  importKeys(connectionId: BigInteger, keys: ImportKeysRequestInput): ImportResult
+  "Removes every key matching a glob, a batch at a time"
+  purgeKeys(connectionId: BigInteger, database: Int, purge: PurgeKeysRequestInput): KeyOperationResult
+  "Gives a lease back, closing the watch when it was the last"
+  releaseKeyspaceWatch(connectionId: BigInteger, database: Int = 0, lease: String): Boolean!
+  "Renames a key"
+  renameKey(connectionId: BigInteger, database: Int, rename: RenameKeyRequestInput): KeyOperationResult
+  "Starts moving keys from one target to another; answers before any have moved"
+  startMigration(
+    "The target to read from"
+    connectionId: BigInteger,
+    migration: MigrateKeysRequestInput
+  ): MigrationJob
+}
+
+extend type Subscription {
+  "Walks a target's keyspace with SCAN, one key at a time. KEYS is never used."
+  keys(
+    "The target to walk"
+    connectionId: BigInteger,
+    "How many keys a SCAN asks for at a time"
+    count: Int,
+    "Which database, or the profile's own"
+    database: Int,
+    "A glob, or every key"
+    match: String,
+    "Only keys of this type"
+    type: String
+  ): KeyEntry
+}
+
+enum MigrationSort {
+  "The name of the target the keys were read from"
+  SOURCE
+  "When the migration began"
+  STARTED
+  "Whether it is moving, done, or something else"
+  STATE
+  "The name of the target the keys were written to"
+  TARGET
+}
+
+enum State {
+  CANCELLED
+  DONE
+  FAILED
+  INTERRUPTED
+  RUNNING
+}
+
+input CopyKeyRequestInput {
+  from: String!
+  replace: Boolean!
+  to: String!
+}
+
+input ExpireKeyRequestInput {
+  key: String!
+  ttlSeconds: BigInteger
+}
+
+input ExportedKeyInput {
+  key: String!
+  payload: [Int!]!
+  ttlMillis: BigInteger!
+}
+
+input ImportKeysRequestInput {
+  confirmTarget: String
+  keys: [ExportedKeyInput]!
+  replace: Boolean!
+}
+
+input MigrateKeysRequestInput {
+  addPrefix: String
+  confirmSource: String
+  confirmTarget: String
+  deleteFromSource: Boolean!
+  keys: [String]
+  limit: Int
+  match: String
+  maxKeysPerSecond: Int
+  replace: Boolean!
+  script: String
+  stripPrefix: String
+  targetConnectionId: BigInteger!
+  type: String
+}
+
+input PurgeKeysRequestInput {
+  confirmTarget: String
+  limit: Int
+  match: String!
+}
+
+input RenameKeyRequestInput {
+  from: String!
+  replace: Boolean!
+  to: String!
+}
+
+type ImportResult {
+  failed: BigInteger!
+  reason: String
+  restored: BigInteger!
+  skipped: BigInteger!
+}
+
+type KeyEntry {
+  key: String
+  ttl: BigInteger!
+  type: String
+}
+
+type KeyOperationResult {
+  affected: BigInteger!
+}
+
+type KeyspaceWatchState {
+  announcing: Boolean!
+  connectionId: BigInteger
+  database: Int!
+  "ISO-8601"
+  leaseExpiresAt: DateTime
+  leaseId: String
+  setting: String
+  supported: Boolean!
+  watchers: Int!
+  watching: Boolean!
+  wouldBecome: String
+}
+
+type MigrationConnection {
+  "Each row with its position in the list"
+  edges: [MigrationEdge]!
+  "The same rows, without their positions"
+  nodes: [MigrationJob]!
+  "Where this page sits within the whole"
+  pageInfo: PageInfo!
+  "How many are moving right now, whatever the filters say"
+  running: Int!
+  "How many match, across every page"
+  totalCount: Int!
+}
+
+type MigrationEdge {
+  "Resume after this row by passing it as `after`"
+  cursor: String!
+  "The migration"
+  node: MigrationJob!
+}
+
+type MigrationJob {
+  deleted: BigInteger!
+  dropped: BigInteger!
+  failed: BigInteger!
+  finished: Boolean!
+  "ISO-8601"
+  finishedAt: DateTime
+  id: String
+  match: String
+  migrated: BigInteger!
+  reason: String
+  resumed: Int!
+  scanned: BigInteger!
+  skipped: BigInteger!
+  "The target the keys were read from"
+  source: ConnectionResponse
+  sourceConnectionId: BigInteger!
+  "ISO-8601"
+  startedAt: DateTime
+  startedBy: String
+  state: State
+  "The target the keys were written to"
+  target: ConnectionResponse
+  targetConnectionId: BigInteger!
+  total: BigInteger
+}
+
+type NamespaceNode {
+  hasChildren: Boolean!
+  keyCount: BigInteger!
+  name: String
+  partial: Boolean!
+  prefix: String
+}

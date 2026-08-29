@@ -1,0 +1,13 @@
+-- What the console may run on one target that it refuses on the others.
+--
+-- Phase 4 wrote the deny-list and said how to widen it: "an operator who wants FLUSHDB on a scratch
+-- target can have it, in configuration". Configuration cannot say which target — keydra.console
+-- .allowed-commands allows the command on every server this Keydra can reach, which is the opposite
+-- of what that sentence means. The scratch server is the reason somebody turns it on; production is
+-- where it also gets turned on.
+--
+-- Comma separated, and only the half of the list that is about the target: the commands refused
+-- because they would break Keydra's own pooled connection are the same on every server, so they are
+-- not a target's to allow. Null means this target refuses whatever the instance refuses, which is
+-- what every existing row means and why there is no default to write.
+ALTER TABLE connection_profile ADD COLUMN console_allowed VARCHAR(1024);

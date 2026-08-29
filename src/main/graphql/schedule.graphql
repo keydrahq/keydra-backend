@@ -1,0 +1,107 @@
+# Work arranged in advance, and what became of it.
+#
+# Part of Keydra's GraphQL schema, checked in so a change to the API arrives as a
+# change to a file somebody reads. Generated from io.keydra.schedule by
+# scripts/split-schema.py; SchemaDriftTest fails when this and the server disagree.
+
+extend type Query {
+  "The kinds of work that can be scheduled, with the permission each one needs"
+  scheduleJobTypes: [JobTypeInfo]
+  "What became of the arranged work, newest first"
+  scheduleRuns(
+    "One schedule's runs, or every schedule's"
+    jobId: BigInteger
+  ): [JobRunSummary]
+  "Every schedule, with when it last ran and when it runs next"
+  schedules: [ScheduleSummary]
+}
+
+extend type Mutation {
+  "Arranges a job to run on a cron expression"
+  createSchedule(
+    "The target the job runs against"
+    connectionId: BigInteger,
+    schedule: ScheduleRequestInput
+  ): ScheduleSummary
+  "Removes a schedule"
+  deleteSchedule(
+    "The target the job runs against"
+    connectionId: BigInteger,
+    id: BigInteger
+  ): Boolean
+  "Runs a scheduled job now, without waiting for its cron"
+  runSchedule(
+    "The target the job runs against"
+    connectionId: BigInteger,
+    id: BigInteger
+  ): JobRunSummary
+  "Changes a schedule"
+  updateSchedule(
+    "The target the job runs against"
+    connectionId: BigInteger,
+    id: BigInteger,
+    schedule: ScheduleRequestInput
+  ): ScheduleSummary
+}
+
+enum JobType {
+  COPY_KEYS
+  EXPORT_KEYS
+  FLUSH_DATABASE
+}
+
+enum RunOutcome {
+  DONE
+  FAILED
+  INTERRUPTED
+  REFUSED
+  RUNNING
+}
+
+input ScheduleRequestInput {
+  confirmSecond: String
+  confirmTarget: String
+  connectionId: BigInteger!
+  cron: String!
+  enabled: Boolean
+  jobType: JobType!
+  name: String!
+  settings: String
+}
+
+type JobRunSummary {
+  detail: String
+  "ISO-8601"
+  finishedAt: DateTime
+  id: BigInteger
+  jobId: BigInteger
+  jobName: String
+  outcome: RunOutcome
+  "ISO-8601"
+  startedAt: DateTime
+  wasManual: Boolean!
+}
+
+type JobTypeInfo {
+  name: String
+  requires: String
+}
+
+type ScheduleSummary {
+  connectionId: BigInteger
+  connectionName: String
+  "ISO-8601"
+  createdAt: DateTime
+  createdBy: String
+  cron: String
+  enabled: Boolean!
+  id: BigInteger
+  jobType: JobType
+  lastOutcome: RunOutcome
+  "ISO-8601"
+  lastRunAt: DateTime
+  name: String
+  "ISO-8601"
+  nextRunAt: DateTime
+  settings: String
+}

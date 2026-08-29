@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main, master]
+  push:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      # Spotless is bound to the validate phase, so format drift fails here too.
+      #
+      # The tests start PostgreSQL, Redis and Valkey through Testcontainers. The
+      # ubuntu-latest runner ships a Docker daemon, so there is no service block: a
+      # service block would pin versions in two places and let them disagree.
+      - name: Build and test
+        run: ./mvnw -B -ntp verify
+
+      # Kept for the run that fails: a Testcontainers failure says almost nothing
+      # without the report beside it, and the alternative is asking somebody to
+      # reproduce a flake on their own machine.
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: target/surefire-reports/
+          retention-days: 7

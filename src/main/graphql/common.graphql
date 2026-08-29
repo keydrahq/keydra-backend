@@ -1,0 +1,16 @@
+# Shapes every domain uses.
+#
+# Part of Keydra's GraphQL schema, checked in so a change to the API arrives as a
+# change to a file somebody reads. Generated from io.keydra.common by
+# scripts/split-schema.py; SchemaDriftTest fails when this and the server disagree.
+
+type PageInfo {
+  "Where this page ends"
+  endCursor: String
+  "Whether there is anything after this page"
+  hasNextPage: Boolean!
+  "Whether there is anything before this page"
+  hasPreviousPage: Boolean!
+  "Where this page begins"
+  startCursor: String
+}

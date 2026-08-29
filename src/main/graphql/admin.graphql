@@ -1,0 +1,54 @@
+# What a target is underneath: its settings, its shape, its accounts, its keyspace.
+#
+# Part of Keydra's GraphQL schema, checked in so a change to the API arrives as a
+# change to a file somebody reads. Generated from io.keydra.admin by
+# scripts/split-schema.py; SchemaDriftTest fails when this and the server disagree.
+
+extend type Query {
+  "The command categories a rule can name, as this server spells them"
+  aclCategories(connectionId: BigInteger): [String]
+  "The accounts the server itself knows about, and what each may run"
+  aclUsers(connectionId: BigInteger): [AclUser]
+  "What a target can do, which decides which tools are offered for it"
+  capabilities(connectionId: BigInteger): Capabilities
+  "The numbered databases on a target, with how many keys each holds"
+  databases(connectionId: BigInteger): [Database]
+  "What the keyspace holds, worked out by sampling it"
+  keyspaceReport(
+    connectionId: BigInteger,
+    "Which database, or the profile's own"
+    database: Int,
+    "How many keys to look at"
+    sample: Int
+  ): KeyspaceReport
+  "Whether the server is writing to disk, and when it last did"
+  persistence(connectionId: BigInteger): PersistenceState
+  "The server's own configuration, as it reports it"
+  serverSettings(
+    connectionId: BigInteger,
+    "Only settings whose name matches"
+    glob: String
+  ): [ServerSetting]
+  "The shape of the target: standalone, replicated, sentinel or clustered"
+  topology(connectionId: BigInteger): TargetTopology
+}
+
+extend type Mutation {
+  "Changes one setting on the running server"
+  changeServerSetting(change: SettingChangeInput, connectionId: BigInteger): Boolean
+  "Removes one of the server's own accounts"
+  deleteAclUser(connectionId: BigInteger, username: String): Boolean
+  "Writes the running configuration to the server's own file"
+  persistServerSettings(connectionId: BigInteger): Boolean
+  "Asks the server to rewrite its append-only file"
+  rewriteAppendLog(connectionId: BigInteger): Boolean
+  "Creates or replaces one of the server's own accounts"
+  setAclUser(connectionId: BigInteger, user: AclUserRequestInput): Boolean
+  "Asks the server to write a snapshot in the background"
+  takeSnapshot(connectionId: BigInteger): Boolean
+}
+
+input SettingChangeInput {
+  name: String!
+  value: String!
+}

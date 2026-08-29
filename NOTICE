@@ -1,0 +1,7 @@
+Keydra
+Copyright 2026 The Keydra Authors
+
+Licensed under the Apache License, Version 2.0. See LICENSE.
+
+Third-party dependencies are declared in pom.xml and keep their own licences.
+`./mvnw dependency:list` prints what a build resolves.

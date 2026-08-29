@@ -1,0 +1,13 @@
+# The topology domain.
+#
+# Part of Keydra's GraphQL schema, checked in so a change to the API arrives as a
+# change to a file somebody reads. Generated from io.keydra.topology by
+# scripts/split-schema.py; SchemaDriftTest fails when this and the server disagree.
+
+type TargetTopology {
+  capabilities: Capabilities
+  health: ClusterHealth
+  nodes: [ClusterNode]
+  sentinelMasters: [SentinelMaster]
+  server: ServerInfo
+}

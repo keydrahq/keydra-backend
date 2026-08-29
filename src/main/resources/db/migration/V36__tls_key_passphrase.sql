@@ -1,0 +1,14 @@
+-- The passphrase on the client key, for the client keys that have one.
+--
+-- Phases 51 and 54 both refused a protected key, and both times the reason was the shape of a
+-- library rather than anything about the key: Vert.x's PEM options have no field for a passphrase.
+-- They do not need one. The key is unlocked before either client sees it, so what reaches them is
+-- an ordinary unencrypted key and neither has a code path for this column at all.
+--
+-- A secret, and treated as one: encrypted at rest with the key every other stored credential uses,
+-- never returned by the API, never logged, and on SecretRotation's list so a rotation moves it.
+-- Which is the treatment ssh_tunnel.passphrase has had since phase 8, for the same reason.
+-- VARCHAR(2048) rather than TEXT, matching ssh_tunnel.passphrase beside it: a passphrase is a
+-- line somebody types, and the ciphertext of one is not long. The key it opens is TEXT because a
+-- PEM is a file.
+ALTER TABLE connection_profile ADD COLUMN tls_client_key_passphrase VARCHAR(2048);
