@@ -35,7 +35,7 @@
         <lz4.version>1.8.1</lz4.version>
         <sshd.version>2.18.0</sshd.version>
         <bouncycastle.version>1.84</bouncycastle.version>
-        <geoip2.version>4.4.0</geoip2.version>
+        <geoip2.version>5.2.0</geoip2.version>
     </properties>
 
     <dependencyManagement>
