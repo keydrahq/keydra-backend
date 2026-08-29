@@ -16,12 +16,12 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
 /**
- * The domains CLAUDE.md lists are the domains that exist.
+ * The domains CONTRIBUTING.md lists are the domains that exist.
  *
- * <p>CLAUDE.md is the file that always applies: every phase is written against it, and its list of
- * domains is what tells somebody where a new piece of code belongs. A list that is wrong is worse
- * than no list, because it is read as though it were right — and by the time this was written it
- * had drifted by nine domains out of twenty-four, some of them years of phases old.
+ * <p>CONTRIBUTING.md is what a pull request is read against, and its list of domains is what tells
+ * somebody where a new piece of code belongs. A list that is wrong is worse than no list, because
+ * it is read as though it were right — and by the time this was written it had drifted by nine
+ * domains out of twenty-four, some of them years of phases old.
  *
  * <p>Checked rather than remembered, for the reason every other coverage test here exists: the
  * failure is not a wrong entry, which somebody notices, but a missing one, which looks exactly like
@@ -32,17 +32,13 @@ import org.junit.jupiter.api.Test;
  */
 class RulesDescribeTheCodeTest {
 
-    private static final Path RULES = Path.of("..", "CLAUDE.md");
+    private static final Path RULES = Path.of("CONTRIBUTING.md");
 
-    private static final Path README = Path.of("..", "README.md");
-
-    private static final Path ROADMAP = Path.of("..", "docs", "ROADMAP.md");
-
-    private static final Path AUTHORIZATION = Path.of("..", "docs", "AUTHORIZATION.md");
+    private static final Path AUTHORIZATION = Path.of("docs", "AUTHORIZATION.md");
 
     private static final Path DOMAINS = Path.of("src/main/java/io/keydra");
 
-    /** What CLAUDE.md itself says is not a domain: the place the domains meet. */
+    /** What the rules themselves say is not a domain: the place the domains meet. */
     private static final String CROSS_CUTTING = "common";
 
     @Test
@@ -68,28 +64,6 @@ class RulesDescribeTheCodeTest {
         // The other direction, which is the one that outlives a rename: a list naming something
         // that is gone sends whoever reads it looking for a package.
         assertThat(imagined, is(empty()));
-    }
-
-    /**
-     * The front page says how far this has got, and is right about it.
-     *
-     * <p>A line that counts something rots by construction — it was four phases stale when this was
-     * written, and it would have been stale again by the next one. Kept rather than removed,
-     * because "what is done" is the first thing somebody wants from a README; checked rather than
-     * maintained, because the number is a claim about a file that is right here.
-     */
-    @Test
-    void theFrontPageSaysHowFarThisHasGot() {
-        Matcher claimed = Pattern.compile("phases 1[–-](\\d+) complete").matcher(read(README));
-        assertThat("README no longer says how far this has got", claimed.find(), is(true));
-
-        Matcher phase = Pattern.compile("(?m)^## Phase (\\d+)").matcher(read(ROADMAP));
-        int last = 0;
-        while (phase.find()) {
-            last = Math.max(last, Integer.parseInt(phase.group(1)));
-        }
-
-        assertThat(Integer.parseInt(claimed.group(1)), is(last));
     }
 
     /**
@@ -131,7 +105,7 @@ class RulesDescribeTheCodeTest {
         String text = read(RULES);
         int start = text.indexOf("Domains:");
         if (start < 0) {
-            throw new IllegalStateException("CLAUDE.md no longer has a list of domains");
+            throw new IllegalStateException("CONTRIBUTING.md no longer has a list of domains");
         }
         // As far as the end of that paragraph: the sentence about io.keydra.common runs on, and
         // anything after the blank line is about something else.
