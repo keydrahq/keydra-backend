@@ -15,9 +15,9 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
-        <quarkus.platform.version>3.33.3.1</quarkus.platform.version>
+        <quarkus.platform.version>3.39.1</quarkus.platform.version>
         <skipITs>true</skipITs>
-        <surefire-plugin.version>3.5.4</surefire-plugin.version>
+        <surefire-plugin.version>3.5.6</surefire-plugin.version>
 
         <!-- Build metadata surfaced by /api/v1/about -->
         <maven.build.timestamp.format>yyyy-MM-dd'T'HH:mm:ss'Z'</maven.build.timestamp.format>
@@ -29,13 +29,13 @@
         <google-java-format.version>1.36.1</google-java-format.version>
         <git-commit-id-plugin.version>10.0.0</git-commit-id-plugin.version>
         <mapstruct.version>1.6.3</mapstruct.version>
-        <msgpack.version>0.9.10</msgpack.version>
+        <msgpack.version>0.9.12</msgpack.version>
         <brotli.version>0.1.2</brotli.version>
-        <aircompressor.version>2.0.2</aircompressor.version>
+        <aircompressor.version>2.0.3</aircompressor.version>
         <lz4.version>1.8.1</lz4.version>
-        <sshd.version>2.18.0</sshd.version>
-        <bouncycastle.version>1.84</bouncycastle.version>
-        <geoip2.version>5.2.0</geoip2.version>
+        <sshd.version>2.19.0</sshd.version>
+        <bouncycastle.version>1.85</bouncycastle.version>
+        <geoip2.version>4.4.0</geoip2.version>
     </properties>
 
     <dependencyManagement>
@@ -340,7 +340,7 @@
         <dependency>
             <groupId>com.aerospike</groupId>
             <artifactId>aerospike-reactor-client</artifactId>
-            <version>9.0.5</version>
+            <version>10.4.0</version>
         </dependency>
         <!--
           A Lua interpreter, pure Java: no native library, so it runs wherever the rest of this
@@ -396,7 +396,7 @@
             </plugin>
             <plugin>
                 <artifactId>maven-resources-plugin</artifactId>
-                <version>3.3.1</version>
+                <version>3.5.0</version>
                 <configuration>
                     <!-- build.properties is filtered; state its encoding explicitly. -->
                     <propertiesEncoding>UTF-8</propertiesEncoding>

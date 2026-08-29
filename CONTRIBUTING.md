@@ -6,9 +6,14 @@ short and specific rather than encouraging.
 ## Getting set up
 
 ```bash
-podman play kube deploy/keydra-dev.yaml   # targets, plus Keydra's own PostgreSQL
+# Keydra's own store, and something to manage. The dev profile already points at both.
+podman run -d --name keydra-db -p 5442:5432 \
+  -e POSTGRES_DB=keydra -e POSTGRES_USER=keydra -e POSTGRES_PASSWORD=keydra \
+  docker.io/library/postgres:17-alpine
+podman run -d --name keydra-target -p 6479:6379 docker.io/library/redis:8-alpine
+
 ./mvnw quarkus:dev
-./mvnw verify                             # tests and the format check
+./mvnw verify    # tests and the format check
 ```
 
 Java 21, and the repository's own `./mvnw` — never a system Maven. A container engine has to
@@ -50,7 +55,20 @@ Use the domain's guard bean and `AuditService.recordAs`.
 token, not a passphrase.
 
 **One package per responsibility.** An entity, a DTO, an exception and a resource never share
-a package. `RulesDescribeTheCodeTest` checks the domain list against the tree.
+a package, and no class takes on more than one of those jobs.
+
+Domains: `io.keydra.about`, `io.keydra.admin`, `io.keydra.alerts`, `io.keydra.analysis`,
+`io.keydra.approvals`, `io.keydra.authz`, `io.keydra.backup`, `io.keydra.cluster`,
+`io.keydra.connections`, `io.keydra.console`, `io.keydra.engine`, `io.keydra.events`,
+`io.keydra.keys`, `io.keydra.mail`, `io.keydra.monitoring`, `io.keydra.preferences`,
+`io.keydra.pubsub`, `io.keydra.schedule`, `io.keydra.security`, `io.keydra.store`,
+`io.keydra.telemetry`, `io.keydra.topology`, `io.keydra.tunnels`, `io.keydra.values`, plus
+`io.keydra.common` for genuinely cross-cutting pieces (`common.config`, `common.rest`,
+`common.openapi`, `common.vertx`).
+
+That list is checked against the tree by `RulesDescribeTheCodeTest`, because a file saying
+where things go is worse than no file when it is wrong — it is read as though it were right.
+By the time that test was written the list had drifted by nine domains out of twenty-four.
 
 **Mapping is generated.** MapStruct in a `mapper` package, with `unmappedTargetPolicy=ERROR`
 so a new field nobody mapped fails the build instead of arriving as null. Only rules that are
