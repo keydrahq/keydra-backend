@@ -7,9 +7,12 @@ a minor bump may break an API.
 
 ## [Unreleased]
 
-Nothing has been tagged yet. `0.0.1-SNAPSHOT` is what `pom.xml` reads and what
-`/api/v1/about` reports; this section describes the development version rather than a
-release, and says so instead of inventing a history.
+Nothing yet.
+
+## [0.0.1] — 2026-08-29
+
+The first tagged version, and a pre-release: below 1.0.0, and not yet carried by anybody
+else's deployment.
 
 ### What this version does
 
@@ -57,4 +60,5 @@ Recorded because they are asked about, not because they are hidden.
   not Keydra's to know or repeat.
 - **Backing up Keydra's own database is the deployment's job.** It is an ordinary PostgreSQL.
 
-[Unreleased]: https://github.com/keydrahq/keydra-backend/commits/main
+[Unreleased]: https://github.com/keydrahq/keydra-backend/compare/v0.0.1...HEAD
+[0.0.1]: https://github.com/keydrahq/keydra-backend/releases/tag/v0.0.1

@@ -27,7 +27,7 @@ class AboutTest extends AbstractTestBase {
                 .statusCode(200)
                 .contentType(ContentType.JSON)
                 .body("name", is("Keydra"))
-                .body("version", is("0.0.1-SNAPSHOT"))
+                .body("version", is("0.0.1"))
                 .body("build.timestamp", not(emptyOrNullString()))
                 .body("build.commit", not(emptyOrNullString()))
                 .body("build.javaVersion", is("21"))
