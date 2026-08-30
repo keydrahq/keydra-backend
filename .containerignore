@@ -1,0 +1,20 @@
+# Build output and local state; the build makes its own.
+target/
+backups/
+*.log
+
+# Git metadata: the image needs none of it.
+.git
+.gitignore
+
+# Secrets and editor noise.
+.env
+.idea/
+.vscode/
+
+# Documentation and CI, which are not inputs to the image.
+docs/
+.github/
+*.md
+LICENSE
+NOTICE
