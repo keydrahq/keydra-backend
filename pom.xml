@@ -14,15 +14,12 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
-        <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
-        <quarkus.platform.version>3.33.3.1</quarkus.platform.version>
+        <quarkus.platform.group-id>com.redhat.quarkus.platform</quarkus.platform.group-id>
+        <quarkus.platform.version>3.33.3.redhat-00001</quarkus.platform.version>
         <skipITs>true</skipITs>
         <surefire-plugin.version>3.5.4</surefire-plugin.version>
 
-        <!-- Build metadata surfaced by /api/v1/about -->
         <maven.build.timestamp.format>yyyy-MM-dd'T'HH:mm:ss'Z'</maven.build.timestamp.format>
-        <!-- Default so resource filtering always resolves: git-commit-id overrides this
-             when a .git directory with at least one commit is present. -->
         <git.commit.id.abbrev>unknown</git.commit.id.abbrev>
 
         <spotless-plugin.version>3.10.0</spotless-plugin.version>
@@ -38,6 +35,32 @@
         <geoip2.version>4.4.0</geoip2.version>
     </properties>
 
+    <repositories>
+        <repository>
+            <id>red-hat-enterprise-maven-repository</id>
+            <url>https://maven.repository.redhat.com/ga/</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+
+    <pluginRepositories>
+        <pluginRepository>
+            <id>red-hat-enterprise-maven-repository</id>
+            <url>https://maven.repository.redhat.com/ga/</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </pluginRepository>
+    </pluginRepositories>
+
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -47,9 +70,6 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-            <!-- The platform's Camel member, so the components and everything under them
-                 are versions this Quarkus release was tested against rather than ones
-                 chosen here. -->
             <dependency>
                 <groupId>${quarkus.platform.group-id}</groupId>
                 <artifactId>quarkus-camel-bom</artifactId>
@@ -142,41 +162,22 @@
             <artifactId>bcpkix-jdk18on</artifactId>
             <version>${bouncycastle.version}</version>
         </dependency>
-        <!--
-          Backup destinations (phase 11), on Apache Camel.
-
-          Every destination is a Camel endpoint URI built from a row, so the set of places a
-          backup can go is the set of components on the classpath rather than the set of
-          clients somebody wrote. Four are here because four are what the forms know how to
-          fill in; a destination of kind CAMEL takes any URI at all, which is the whole
-          argument for the framework — Azure Blob, GCS, a JMS queue and an HTTP endpoint are
-          a dependency line away rather than a class each.
-        -->
         <dependency>
             <groupId>org.apache.camel.quarkus</groupId>
             <artifactId>camel-quarkus-core</artifactId>
         </dependency>
-        <!-- Local directories, which is also how a mounted share is reached. -->
         <dependency>
             <groupId>org.apache.camel.quarkus</groupId>
             <artifactId>camel-quarkus-file</artifactId>
         </dependency>
-        <!-- One component for ftp, ftps and sftp; the sftp side rides on the MINA SSHD that
-             the tunnels already brought in. -->
         <dependency>
             <groupId>org.apache.camel.quarkus</groupId>
             <artifactId>camel-quarkus-ftp</artifactId>
         </dependency>
-        <!-- S3, and everything that speaks its API: MinIO, Cloudflare R2, Spaces. -->
         <dependency>
             <groupId>org.apache.camel.quarkus</groupId>
             <artifactId>camel-quarkus-aws2-s3</artifactId>
         </dependency>
-        <!--
-          The other two clouds. Each is a dependency line and a case in DestinationUri, which
-          is the payoff for building this on components rather than on clients: neither
-          needed a class, and both can be listed, fetched from and pruned like the rest.
-        -->
         <dependency>
             <groupId>org.apache.camel.quarkus</groupId>
             <artifactId>camel-quarkus-azure-storage-blob</artifactId>
@@ -185,11 +186,6 @@
             <groupId>org.apache.camel.quarkus</groupId>
             <artifactId>camel-quarkus-google-storage</artifactId>
         </dependency>
-        <!--
-          Where an alert goes. The same producer that sends a backup sends these: an HTTP
-          endpoint covers Slack, Teams, Discord and every incoming webhook there is, and
-          mail covers the address somebody reads at three in the morning.
-        -->
         <dependency>
             <groupId>org.apache.camel.quarkus</groupId>
             <artifactId>camel-quarkus-http</artifactId>
@@ -198,18 +194,6 @@
             <groupId>org.apache.camel.quarkus</groupId>
             <artifactId>camel-quarkus-mail</artifactId>
         </dependency>
-        <!--
-          The two chat tools that are not reached by posting JSON at a URL. Telegram's bot
-          API and Slack's chat.postMessage both want a token in a header and a recipient the
-          caller names, and both already exist as components — which is the argument this
-          application keeps making: a channel is a dependency line and a case in the sender.
-
-          WhatsApp is deliberately not among them. Camel has a component for it, but there is
-          no Quarkus extension, and its Cloud API is a POST of JSON with a bearer token —
-          which is the HTTP producer two lines above. A component that is not built for this
-          runtime, to make a request the runtime already knows how to make, is a dependency
-          bought with nothing.
-        -->
         <dependency>
             <groupId>org.apache.camel.quarkus</groupId>
             <artifactId>camel-quarkus-telegram</artifactId>
@@ -218,21 +202,11 @@
             <groupId>org.apache.camel.quarkus</groupId>
             <artifactId>camel-quarkus-slack</artifactId>
         </dependency>
-        <!-- Decoding msgpack values for display; nothing else in the app speaks it. -->
         <dependency>
             <groupId>org.msgpack</groupId>
             <artifactId>msgpack-core</artifactId>
             <version>${msgpack.version}</version>
         </dependency>
-        <!-- The three compressors the JDK does not carry. Each is here to read a value
-             somebody stored, never to write one, and each was chosen for being pure Java:
-             a decoder that needs a native library is a decoder that fails on somebody's
-             architecture, and this one runs on an event loop.
-
-             brotli's is Google's own decoder-only artifact; aircompressor supplies zstd
-             (its encoder comes along, unused); lz4-java is the only one that reads the LZ4
-             frame format rather than bare blocks, which is the framing anything writing a
-             file or a cache entry uses. -->
         <dependency>
             <groupId>org.brotli</groupId>
             <artifactId>dec</artifactId>
@@ -252,8 +226,6 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-reactive-pg-client</artifactId>
         </dependency>
-        <!-- Schema migrations. Flyway speaks JDBC and the application speaks the reactive
-             driver; both point at the same database, and only Flyway uses the JDBC one. -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-flyway</artifactId>
@@ -266,11 +238,6 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-openapi</artifactId>
         </dependency>
-        <!--
-          A second way to ask, for the questions REST answers badly (phase 23). Beside the
-          REST surface rather than instead of it: a page that needs six columns of a long
-          list asks for six columns, and everything else keeps the endpoint it has.
-        -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-graphql</artifactId>
@@ -279,11 +246,6 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-health</artifactId>
         </dependency>
-        <!--
-          Scheduled work (phase 10). Used through the programmatic Scheduler rather than
-          @Scheduled: the cadences are rows somebody edits while the application is running,
-          and an annotation is fixed when the image is built.
-        -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-scheduler</artifactId>
@@ -292,12 +254,6 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-oidc</artifactId>
         </dependency>
-        <!--
-          What Keydra says about itself (phase 18). Prometheus because it is what the estates
-          this gets deployed into already scrape; OpenTelemetry because a slow request is a
-          question about where its time went; JSON logging because a log shipper should not
-          have to parse a format written for a person.
-        -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-micrometer-registry-prometheus</artifactId>
@@ -320,7 +276,6 @@
             <artifactId>quarkus-test-vertx</artifactId>
             <scope>test</scope>
         </dependency>
-        <!-- Drives the role matrix without standing up an identity provider per test run. -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-test-security</artifactId>
@@ -331,38 +286,16 @@
             <artifactId>rest-assured</artifactId>
             <scope>test</scope>
         </dependency>
-        <!--
-          TiKV's Java client, and the least comfortable dependency in this build: last released May
-          2023, entirely blocking, and its scan answers with a materialised list rather than a
-          cursor. io.keydra.engine.tikv is written around all three.
-
-          It shades gRPC and protobuf under org.tikv.shade, which is why those do not argue with
-          anything here; it does not shade Apache HttpClient, so the build logs split packages
-          between it and httpclient 4.5.14. That is a warning rather than a conflict — the client
-          uses its copy for talking to the placement driver and nothing here loads those classes —
-          and the alternative is repackaging somebody else's jar.
-        -->
         <dependency>
             <groupId>org.tikv</groupId>
             <artifactId>tikv-client-java</artifactId>
             <version>3.3.5</version>
         </dependency>
-        <!--
-          Aerospike's own client, the reactive build: it answers in Reactor types, which convert to
-          Mutiny without a thread of their own, so an engine written against it keeps the promise
-          the rest of this application makes about never blocking an event loop.
-        -->
         <dependency>
             <groupId>com.aerospike</groupId>
             <artifactId>aerospike-reactor-client</artifactId>
             <version>9.0.5</version>
         </dependency>
-        <!--
-          A Lua interpreter, pure Java: no native library, so it runs wherever the rest of this
-          does. It is here for one thing only — a script that decides what happens to each key as a
-          migration moves it — and the whole of io.keydra.keys.script exists to make sure that is
-          all it can do. See SafeLua for what is taken away and why.
-        -->
         <dependency>
             <groupId>org.luaj</groupId>
             <artifactId>luaj-jse</artifactId>
@@ -387,7 +320,6 @@
 
     <build>
         <resources>
-            <!-- build.properties carries Maven/git metadata, so it alone is filtered. -->
             <resource>
                 <directory>src/main/resources</directory>
                 <filtering>true</filtering>
@@ -413,7 +345,6 @@
                 <artifactId>maven-resources-plugin</artifactId>
                 <version>3.3.1</version>
                 <configuration>
-                    <!-- build.properties is filtered; state its encoding explicitly. -->
                     <propertiesEncoding>UTF-8</propertiesEncoding>
                 </configuration>
             </plugin>
@@ -430,8 +361,6 @@
                         </path>
                     </annotationProcessorPaths>
                     <compilerArgs>
-                        <!-- Fail the build on an unmapped target property rather than
-                             silently leaving it null. -->
                         <arg>-Amapstruct.unmappedTargetPolicy=ERROR</arg>
                     </compilerArgs>
                 </configuration>
@@ -440,18 +369,6 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${surefire-plugin.version}</version>
                 <configuration>
-                    <!--
-                      Surefire's default is `filesystem`, which is directory order and therefore a
-                      different order on every machine. That is not a preference here: which test
-                      class starts Quarkus first decides which class loads TiKV's shaded Guava
-                      first, and one of those orders initialises it re-entrantly and fails the
-                      whole boot with an NPE inside ImmutableList.<clinit>. The suite passed
-                      locally and failed in CI on the same commit for exactly that reason.
-
-                      Alphabetical does not fix the underlying class-init bug — it makes the
-                      order the same everywhere, so the bug either always happens or never does,
-                      and a failure is reproducible on the machine of whoever has to fix it.
-                    -->
                     <runOrder>alphabetical</runOrder>
                     <argLine>@{argLine}</argLine>
                     <systemPropertyVariables>
@@ -481,8 +398,6 @@
                 </configuration>
             </plugin>
 
-            <!-- Git metadata for /api/v1/about. Never fails the build: a fresh clone
-                 without commits, or a checkout without .git, falls back to "unknown". -->
             <plugin>
                 <groupId>io.github.git-commit-id</groupId>
                 <artifactId>git-commit-id-maven-plugin</artifactId>
@@ -508,7 +423,6 @@
                 </configuration>
             </plugin>
 
-            <!-- google-java-format via Spotless; build fails on format drift. -->
             <plugin>
                 <groupId>com.diffplug.spotless</groupId>
                 <artifactId>spotless-maven-plugin</artifactId>
