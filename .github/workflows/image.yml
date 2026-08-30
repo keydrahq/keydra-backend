@@ -1,0 +1,175 @@
+name: Image
+
+# The API alone, as quay.io/keydrahq/keydra-backend.
+#
+# ci.yml answers whether the code is right. This answers a different question and one nothing
+# else asks: whether the thing that ships starts. What that catches lives between the image
+# and the runtime — a file the runtime user cannot read, a probe naming a program the base
+# does not carry — and every test goes on passing while it happens.
+#
+# The ordinary deployment is the single image built in keydrahq/keydra, which carries the
+# interface inside it. This one is for the deployments that serve the interface separately,
+# paired with quay.io/keydrahq/keydra-ui.
+
+on:
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'pom.xml'
+      - '.mvn/**'
+      - 'Containerfile'
+      - '.containerignore'
+      - '.github/workflows/image.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'pom.xml'
+      - '.mvn/**'
+      - 'Containerfile'
+      - '.containerignore'
+      - '.github/workflows/image.yml'
+  # A release is a version. `release` rather than `push: tags`, because a path filter and a
+  # tag trigger cannot share one push block: pushing a tag to a commit already on main
+  # carries no changed files, so the filter would match nothing and the release would
+  # silently not publish — a failure that looks exactly like success.
+  release:
+    types: [published]
+  # The base images are rebuilt from tags Red Hat republishes. A weekly run is what picks up
+  # their patches between releases.
+  schedule:
+    - cron: '0 7 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  REGISTRY: quay.io
+  REPOSITORY: quay.io/keydrahq/keydra-backend
+
+jobs:
+  image:
+    name: Build the image and start it
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # --format docker rather than the OCI default, which is the only format with somewhere
+      # to put a HEALTHCHECK. The Containerfile carries one and Podman drops it with a
+      # warning; the same flag whether the image is pushed or not, so that what CI starts is
+      # what CI would publish.
+      - name: Build
+        run: |
+          podman build --format docker --ulimit nofile=16384:16384 \
+            -t localhost/keydra-backend:ci -f Containerfile .
+
+      - name: Start it and ask what only a running installation can answer
+        run: |
+          set -euo pipefail
+          trap 'podman pod rm -f keydra-ci >/dev/null 2>&1 || true' EXIT
+
+          podman pod create --name keydra-ci >/dev/null
+          podman run -d --pod keydra-ci --name ci-pg \
+            -e POSTGRES_DB=keydra -e POSTGRES_USER=keydra -e POSTGRES_PASSWORD=keydra \
+            docker.io/library/postgres:17-alpine >/dev/null
+          for _ in $(seq 1 30); do
+            podman exec ci-pg pg_isready -U keydra >/dev/null 2>&1 && break; sleep 2
+          done
+
+          podman run -d --pod keydra-ci --name ci-api \
+            -e KEYDRA_DB_URL=postgresql://localhost:5432/keydra \
+            -e KEYDRA_DB_USERNAME=keydra -e KEYDRA_DB_PASSWORD=keydra \
+            -e KEYDRA_SECRET_KEY="$(openssl rand -base64 32)" \
+            -e KEYDRA_COOKIE_SECURE=false \
+            localhost/keydra-backend:ci >/dev/null
+
+          # Curl from inside the pod rather than publishing host ports: what is being checked
+          # is the image, not the runtime's port forwarding.
+          X() { podman exec ci-api curl -s "$@"; }
+          for _ in $(seq 1 60); do
+            X -f -o /dev/null http://localhost:9001/q/health/ready >/dev/null 2>&1 && break; sleep 5
+          done
+          X -f -o /dev/null http://localhost:9001/q/health/ready || {
+            echo "::error::it never became ready"; podman logs --tail 80 ci-api; exit 1; }
+
+          fail() { echo "::error::$1"; podman logs --tail 80 ci-api; exit 1; }
+
+          # Every migration applied to an empty schema, in order — which no test of a single
+          # migration checks, and which is what a first release does.
+          applied=$(podman exec ci-pg psql -U keydra -d keydra -tAc \
+            "select count(*) from flyway_schema_history where success" | tr -d '[:space:]')
+          [ "${applied:-0}" -gt 0 ] || fail "no migrations were applied"
+          echo "  migrations applied: $applied"
+
+          # Nothing describing the installation on the port a proxy publishes. This is the
+          # check the separate management port exists for.
+          for hidden in /q/metrics /q/health/ready /api/openapi; do
+            code=$(X -o /dev/null -w '%{http_code}' "http://localhost:8181$hidden")
+            [ "$code" = "404" ] || fail "$hidden answered $code on the published port"
+          done
+          X -f -o /dev/null http://localhost:9001/q/metrics || fail "metrics are not on the management port"
+
+          # An endpoint that makes an administrator must stop working the moment there is one.
+          code=$(X -o /dev/null -w '%{http_code}' -X POST http://localhost:8181/api/v1/auth/setup \
+            -H 'Content-Type: application/json' \
+            -d '{"username":"ci-admin","password":"a-password-nobody-guesses"}')
+          [ "$code" = "201" ] || fail "the first administrator could not be created ($code)"
+          code=$(X -o /dev/null -w '%{http_code}' -X POST http://localhost:8181/api/v1/auth/setup \
+            -H 'Content-Type: application/json' \
+            -d '{"username":"second","password":"a-password-nobody-guesses"}')
+          [ "$code" != "201" ] || fail "a second administrator could be created through setup"
+
+          # The failure phase 65 found looks like success until you look twice: the
+          # application starts perfectly and is stopped a few seconds later, for ever.
+          sleep 45
+          X -f -o /dev/null http://localhost:9001/q/health/ready || fail "it stopped answering"
+          starts=$(podman logs ci-api 2>&1 | grep -c 'Listening on' || true)
+          [ "$starts" = "1" ] || fail "it started $starts times, so something is stopping it"
+
+          echo "  the image starts, serves and stays up"
+
+      - name: Sign in to the registry
+        if: >-
+          (github.event_name == 'push' || github.event_name == 'release')
+          && github.repository == 'keydrahq/keydra-backend'
+        env:
+          QUAY_USERNAME: ${{ secrets.QUAY_USERNAME }}
+          QUAY_TOKEN: ${{ secrets.QUAY_TOKEN }}
+        run: |
+          if [ -z "${QUAY_USERNAME}" ] || [ -z "${QUAY_TOKEN}" ]; then
+            echo "::error::QUAY_USERNAME and QUAY_TOKEN are not set. Add the keydrahq robot" \
+                 "account's name and token as repository secrets, and give it write on" \
+                 "quay.io/keydrahq/keydra-backend."
+            exit 1
+          fi
+          podman login "${REGISTRY}" --username "${QUAY_USERNAME}" --password-stdin <<< "${QUAY_TOKEN}"
+
+      # refs/tags/v0.0.1 -> :0.0.1 and :latest;  main -> :main.
+      #
+      # `latest` moves on a release and not on a merge, because a person pulling by name is
+      # not asking for whatever built most recently.
+      - name: Push
+        if: >-
+          (github.event_name == 'push' || github.event_name == 'release')
+          && github.repository == 'keydrahq/keydra-backend'
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          if [ -n "${RELEASE_TAG:-}" ]; then
+            tags=("${RELEASE_TAG#v}" latest)
+          else
+            tags=(main)
+          fi
+          for tag in "${tags[@]}"; do
+            podman tag localhost/keydra-backend:ci "${REPOSITORY}:${tag}"
+            podman push "${REPOSITORY}:${tag}"
+            echo "pushed ${REPOSITORY}:${tag}" >> "${GITHUB_STEP_SUMMARY}"
+          done
+          digest=$(podman inspect --format '{{index .RepoDigests 0}}' "${REPOSITORY}:${tags[0]}")
+          echo "digest: \`${digest}\`" >> "${GITHUB_STEP_SUMMARY}"
