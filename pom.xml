@@ -29,6 +29,11 @@
         <msgpack.version>0.9.10</msgpack.version>
         <brotli.version>0.1.2</brotli.version>
         <aircompressor.version>2.0.3</aircompressor.version>
+        <!-- Only read by the `tikv` profile. 3.3.5 is the newest, and every component it
+             bundles is newer than 3.2.0's — netty 4.1.77 against 4.1.52, jackson 2.13.2
+             against 2.12.3, protobuf 3.19.6 against 3.12.0. Move it down only for a server
+             compatibility reason, and write the reason here when you do. -->
+        <tikv.version>3.3.5</tikv.version>
         <lz4.version>1.8.1</lz4.version>
         <sshd.version>2.18.0</sshd.version>
         <bouncycastle.version>1.84</bouncycastle.version>
@@ -287,11 +292,6 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.tikv</groupId>
-            <artifactId>tikv-client-java</artifactId>
-            <version>3.3.5</version>
-        </dependency>
-        <dependency>
             <groupId>com.aerospike</groupId>
             <artifactId>aerospike-reactor-client</artifactId>
             <version>9.0.5</version>
@@ -454,6 +454,92 @@
     </build>
 
     <profiles>
+        <!-- TiKV, off by default, and the default is the decision.
+             ~
+             The client is a 17,000-entry uber-jar that shades Guava and nothing else. What it
+             brings with it is forty-nine advisories in its own bundled copies of netty,
+             jackson, guava, protobuf and commons-lang3 — none of them upgradable, because they
+             are inside the jar and it is already its newest version — plus the class-loader
+             arrangement in application.properties, which exists entirely for it.
+             ~
+             None of that is reachable without a TiKV target, so an installation that does not
+             manage one was carrying the whole of it for nothing. It is a build-time choice
+             rather than a setting because a setting cannot remove a jar from an image.
+             ~
+                 ./mvnw -Ptikv verify
+                 podman build (with MAVEN_PROFILES set to -Ptikv) ...
+             ~
+             Nothing above the engine changes. TikvEngine is discovered as a CDI bean and named
+             nowhere else, so its absence is a bean that is not there rather than a reference
+             that does not resolve; EngineType.TIKV stays, because rows in the database name it
+             and an enum that loses a constant cannot read them back. -->
+        <profile>
+            <id>tikv</id>
+            <properties>
+                <!-- Read by Quarkus at build time, and here rather than in
+                     application.properties because it exists for the dependency below and for
+                     nothing else. The reasoning is written where somebody would look for it,
+                     in application.properties, next to a note saying it lives here. -->
+                <quarkus.class-loading.parent-first-artifacts>org.antlr:antlr4-runtime,org.tikv:tikv-client-java</quarkus.class-loading.parent-first-artifacts>
+            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>org.tikv</groupId>
+                    <artifactId>tikv-client-java</artifactId>
+                    <version>${tikv.version}</version>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                    <!-- The same setting again, as a system property, because the two builds read
+                         it from different places. The Maven property above reaches quarkus:build,
+                         which packages; a @QuarkusTest augments inside the surefire JVM and reads
+                         system properties instead. Setting only one of them gives a package that
+                         is right and a test run that loses its first class alphabetically to the
+                         race, which is how this was found. -->
+                    <plugin>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <quarkus.class-loading.parent-first-artifacts>org.antlr:antlr4-runtime,org.tikv:tikv-client-java</quarkus.class-loading.parent-first-artifacts>
+                            </systemPropertyVariables>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>build-helper-maven-plugin</artifactId>
+                        <version>3.6.0</version>
+                        <executions>
+                            <execution>
+                                <id>tikv-sources</id>
+                                <phase>generate-sources</phase>
+                                <goals>
+                                    <goal>add-source</goal>
+                                </goals>
+                                <configuration>
+                                    <sources>
+                                        <source>src/tikv/java</source>
+                                    </sources>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>tikv-tests</id>
+                                <phase>generate-test-sources</phase>
+                                <goals>
+                                    <goal>add-test-source</goal>
+                                </goals>
+                                <configuration>
+                                    <sources>
+                                        <source>src/tikv/test</source>
+                                    </sources>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
         <profile>
             <id>native</id>
             <activation>

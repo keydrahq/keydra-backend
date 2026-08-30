@@ -15,6 +15,7 @@ import io.keydra.connections.mapper.ConnectionMapper;
 import io.keydra.connections.persistence.ConnectionProfileRepository;
 import io.keydra.connections.registry.ConnectionRegistry;
 import io.keydra.console.service.CommandPolicy;
+import io.keydra.engine.EngineSelector;
 import io.keydra.engine.EngineType;
 import io.keydra.events.dto.NotificationCategory;
 import io.keydra.events.service.NotificationHub;
@@ -47,6 +48,7 @@ public class ConnectionService {
     private final ConnectionMapper mapper;
     private final NotificationHub hub;
     private final CallerPermissions caller;
+    private final EngineSelector engines;
     private final jakarta.enterprise.event.Event<ConnectionRemoved> removed;
 
     @Inject
@@ -57,6 +59,7 @@ public class ConnectionService {
             ConnectionMapper mapper,
             NotificationHub hub,
             CallerPermissions caller,
+            EngineSelector engines,
             jakarta.enterprise.event.Event<ConnectionRemoved> removed) {
         this.repository = repository;
         this.registry = registry;
@@ -64,6 +67,7 @@ public class ConnectionService {
         this.mapper = mapper;
         this.hub = hub;
         this.caller = caller;
+        this.engines = engines;
         this.removed = removed;
     }
 
@@ -162,6 +166,7 @@ public class ConnectionService {
                         ignored -> {
                             ConnectionProfile profile = new ConnectionProfile();
                             mapper.apply(request, profile);
+                            requireEngineIsBuiltIn(profile);
                             requireUsableCertificates(profile);
                             CommandPolicy.requireAskable(profile);
                             return repository.persist(profile);
@@ -199,6 +204,7 @@ public class ConnectionService {
                                         .map(
                                                 ignored -> {
                                                     mapper.apply(request, profile);
+                                                    requireEngineIsBuiltIn(profile);
                                                     requireUsableCertificates(profile);
                                                     CommandPolicy.requireAskable(profile);
                                                     return profile;
@@ -346,6 +352,24 @@ public class ConnectionService {
      * offering it — which is why TiKV, whose client wants files on disk, is refused rather than
      * quietly given something it will not read.
      */
+    /**
+     * Refuses a target this build cannot serve, while somebody is still looking at the form.
+     *
+     * <p>TiKV is behind a Maven profile, so an image can be running that has no engine for it. Left
+     * to itself the profile would save, sit in the list looking like every other one, and fail at
+     * the first request with something about a missing bean — which is a bug report rather than an
+     * answer. The moment to say so is the moment somebody asks for it.
+     */
+    private void requireEngineIsBuiltIn(ConnectionProfile profile) {
+        if (!engines.has(profile.engine)) {
+            throw new InvalidConnectionException(
+                    "This installation cannot manage a "
+                            + profile.engine
+                            + " target: the engine is not in this build of Keydra. An image built"
+                            + " with the `tikv` profile can, and the published one is not.");
+        }
+    }
+
     private static void requireUsableCertificates(ConnectionProfile profile) {
         boolean any =
                 Certificates.present(profile.tlsCaCert)

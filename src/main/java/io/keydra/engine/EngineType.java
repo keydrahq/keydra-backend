@@ -37,6 +37,15 @@ public enum EngineType {
      * prefix becomes the range scan TiKV actually offers. What it has none of is everything above
      * that: no types, no server statistics, no command language, no pub/sub.
      *
+     * <p><b>Not in the published image.</b> The engine is behind the {@code tikv} Maven profile,
+     * because its client is an uber-jar that shades Guava and nothing else: it carries forty-nine
+     * advisories in bundled copies of netty, jackson, guava, protobuf and commons-lang3 that
+     * nothing can upgrade, and the class-loading arrangement in pom.xml exists entirely for it.
+     * None of that is reachable without a TiKV target, so an installation managing none was
+     * carrying all of it. The constant stays whatever the build did — rows in the database name it,
+     * and an enum that loses a constant cannot read them back — and a build without the engine
+     * refuses the profile while somebody is still looking at the form.
+     *
      * <p>And one thing worth knowing before reading the engine. Asking a TiKV for a key's
      * time-to-live, on a cluster that was not started with TTL enabled, does not answer an error:
      * the server panics and the process dies. So this engine never asks. The TTL column is empty

@@ -40,11 +40,18 @@ COPY pom.xml ./
 # io.quarkus:quarkus-core:3.33.2.redhat-00005 is one the GA repository does not have. The
 # build never wanted it; only that goal did. These two warm the same layer and respect the
 # BOM, which was the whole point of the step.
-RUN mvn -B -ntp dependency:resolve dependency:resolve-plugins
+# Which optional engines this image carries. Empty by default, and that default is the
+# decision: the TiKV client is an uber-jar carrying forty-nine advisories in bundled copies
+# nothing can upgrade, and an installation that manages no TiKV was shipping all of it.
+#
+#   podman build --build-arg MAVEN_PROFILES=-Ptikv ...
+ARG MAVEN_PROFILES=""
+
+RUN mvn -B -ntp ${MAVEN_PROFILES} dependency:resolve dependency:resolve-plugins
 
 COPY src/ src/
 # Tests need containers, which a build container does not have; they run in CI.
-RUN mvn -B -ntp package -DskipTests
+RUN mvn -B -ntp ${MAVEN_PROFILES} package -DskipTests
 
 # --- Stage 2: what actually ships ---------------------------------------------
 # The runtime variant: a JRE without the compiler, which is a few hundred megabytes a running

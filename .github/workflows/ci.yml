@@ -45,3 +45,27 @@ jobs:
           name: surefire-reports
           path: target/surefire-reports/
           retention-days: 7
+
+  optional-engines:
+    name: The engines that are not in the default build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      # TiKV's sources live under src/tikv and are compiled only by its profile, so nothing
+      # in the ordinary build would notice them breaking — a rename in an interface they
+      # implement, a method they call that goes away. This compiles them and runs their own
+      # tests, which is the cheap half of what the profile does.
+      #
+      # Not the whole suite. Everything else it would run is already run above, and the
+      # difference between the two builds is these three classes and the class-loading
+      # arrangement the profile turns on.
+      - name: Compile the TiKV engine and run its tests
+        run: ./mvnw -B -ntp -Ptikv test -Dtest='Tikv*' -DfailIfNoSpecifiedTests=true

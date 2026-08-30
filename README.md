@@ -33,6 +33,11 @@ which of them may do what.
   without downtime; account passwords are Argon2id. Nothing secret is ever returned by the
   API or written to a log.
 
+TiKV is the one engine the published image leaves out. Its client bundles copies of netty,
+jackson, guava and protobuf that nothing can upgrade — forty-nine advisories an installation
+managing no TiKV was carrying for nothing — so it is built with the `tikv` Maven profile
+instead. A build without it refuses a TiKV target while you are still filling in the form.
+
 ## Requirements
 
 - **Java 21.** Do not use a system Maven — the repository ships `./mvnw`.

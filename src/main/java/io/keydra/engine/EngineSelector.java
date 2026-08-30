@@ -31,9 +31,19 @@ public class EngineSelector {
     public KeyValueEngine forType(EngineType type) {
         KeyValueEngine engine = engines.get(type);
         if (engine == null) {
-            throw new IllegalStateException("No engine registered for " + type);
+            // Not "no engine registered", which reads like a wiring mistake. An engine can be
+            // absent because this build left it out on purpose — TiKV is behind a Maven profile
+            // — and a row naming it can outlive the build that could serve it, because the
+            // database is older than any one image. So the message says which of those it is,
+            // and how to get the other build.
+            throw new EngineNotBuiltInException(type);
         }
         return engine;
+    }
+
+    /** Whether this build can serve that store at all, which is a question about the build. */
+    public boolean has(EngineType type) {
+        return engines.containsKey(type);
     }
 
     /** Every engine, so a profile-independent action can be applied to all of them. */
