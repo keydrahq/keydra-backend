@@ -34,7 +34,13 @@ WORKDIR /build
 # than code, so that layer survives almost every rebuild.
 COPY .mvn/ .mvn/
 COPY pom.xml ./
-RUN mvn -B -ntp dependency:go-offline
+# `dependency:resolve` and not `go-offline`, which is a change the Red Hat platform forced.
+# go-offline walks the raw dependency graph rather than the managed one, so it asks for the
+# versions the Camel artifacts declare before dependencyManagement overrides them — and
+# io.quarkus:quarkus-core:3.33.2.redhat-00005 is one the GA repository does not have. The
+# build never wanted it; only that goal did. These two warm the same layer and respect the
+# BOM, which was the whole point of the step.
+RUN mvn -B -ntp dependency:resolve dependency:resolve-plugins
 
 COPY src/ src/
 # Tests need containers, which a build container does not have; they run in CI.
