@@ -60,13 +60,31 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # The Containerfile puts dependency resolution in its own layer so a source-only
+      # rebuild reuses it. That works on a developer's machine and never here: a runner
+      # arrives with no layers at all, so every run has fetched the whole repository again —
+      # which is most of what the seven and a half minutes below was. The cache belongs to
+      # the runner and the build borrows it; what `-v` mounts into a build is not in the
+      # image, so nothing about what ships changes.
+      - name: Cache the Maven repository
+        uses: actions/cache@v6
+        with:
+          path: ~/.m2/repository
+          key: m2-image-${{ hashFiles('pom.xml') }}
+          restore-keys: m2-image-
+
       # --format docker rather than the OCI default, which is the only format with somewhere
       # to put a HEALTHCHECK. The Containerfile carries one and Podman drops it with a
       # warning; the same flag whether the image is pushed or not, so that what CI starts is
       # what CI would publish.
+      #
+      # /root/.m2 because the build stage runs as root — it has to, since the base runs as
+      # 185 and /build would not be writable otherwise.
       - name: Build
         run: |
+          mkdir -p "$HOME/.m2/repository"
           podman build --format docker --ulimit nofile=16384:16384 \
+            -v "$HOME/.m2/repository:/root/.m2/repository:rw" \
             -t localhost/keydra-backend:ci -f Containerfile .
 
       - name: Start it and ask what only a running installation can answer
