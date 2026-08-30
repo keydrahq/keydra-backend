@@ -35,8 +35,9 @@ on:
   # silently not publish — a failure that looks exactly like success.
   release:
     types: [published]
-  # The base images are rebuilt from tags Red Hat republishes. A weekly run is what picks up
-  # their patches between releases.
+  # The base images are rebuilt from tags Red Hat republishes, so the same source produces a
+  # patched image a week later. The weekly run publishes, which is the whole point: found and
+  # not shipped is the same as not found, and between releases nothing else moves :main.
   schedule:
     - cron: '0 7 * * 1'
   workflow_dispatch:
@@ -135,7 +136,8 @@ jobs:
 
       - name: Sign in to the registry
         if: >-
-          (github.event_name == 'push' || github.event_name == 'release')
+          (github.event_name == 'push' || github.event_name == 'release'
+           || github.event_name == 'schedule')
           && github.repository == 'keydrahq/keydra-backend'
         env:
           QUAY_USERNAME: ${{ secrets.QUAY_USERNAME }}
@@ -155,7 +157,8 @@ jobs:
       # not asking for whatever built most recently.
       - name: Push
         if: >-
-          (github.event_name == 'push' || github.event_name == 'release')
+          (github.event_name == 'push' || github.event_name == 'release'
+           || github.event_name == 'schedule')
           && github.repository == 'keydrahq/keydra-backend'
         env:
           RELEASE_TAG: ${{ github.event.release.tag_name }}

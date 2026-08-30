@@ -31,7 +31,7 @@
         <mapstruct.version>1.6.3</mapstruct.version>
         <msgpack.version>0.9.10</msgpack.version>
         <brotli.version>0.1.2</brotli.version>
-        <aircompressor.version>2.0.2</aircompressor.version>
+        <aircompressor.version>2.0.3</aircompressor.version>
         <lz4.version>1.8.1</lz4.version>
         <sshd.version>2.18.0</sshd.version>
         <bouncycastle.version>1.84</bouncycastle.version>
@@ -56,6 +56,21 @@
                 <version>${quarkus.platform.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents.client5</groupId>
+                <artifactId>httpclient5</artifactId>
+                <version>5.6.3</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents.core5</groupId>
+                <artifactId>httpcore5</artifactId>
+                <version>5.4.3</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents.core5</groupId>
+                <artifactId>httpcore5-h2</artifactId>
+                <version>5.4.3</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
