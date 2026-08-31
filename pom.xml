@@ -17,16 +17,16 @@
         <quarkus.platform.group-id>com.redhat.quarkus.platform</quarkus.platform.group-id>
         <quarkus.platform.version>3.33.3.redhat-00001</quarkus.platform.version>
         <skipITs>true</skipITs>
-        <surefire-plugin.version>3.5.4</surefire-plugin.version>
+        <surefire-plugin.version>3.5.6</surefire-plugin.version>
 
         <maven.build.timestamp.format>yyyy-MM-dd'T'HH:mm:ss'Z'</maven.build.timestamp.format>
         <git.commit.id.abbrev>unknown</git.commit.id.abbrev>
 
-        <spotless-plugin.version>3.10.0</spotless-plugin.version>
+        <spotless-plugin.version>3.10.1</spotless-plugin.version>
         <google-java-format.version>1.36.1</google-java-format.version>
         <git-commit-id-plugin.version>10.0.0</git-commit-id-plugin.version>
         <mapstruct.version>1.6.3</mapstruct.version>
-        <msgpack.version>0.9.10</msgpack.version>
+        <msgpack.version>0.9.12</msgpack.version>
         <brotli.version>0.1.2</brotli.version>
         <aircompressor.version>2.0.3</aircompressor.version>
         <!-- Only read by the `tikv` profile. 3.3.5 is the newest, and every component it
@@ -35,8 +35,8 @@
              compatibility reason, and write the reason here when you do. -->
         <tikv.version>3.3.5</tikv.version>
         <lz4.version>1.8.1</lz4.version>
-        <sshd.version>2.18.0</sshd.version>
-        <bouncycastle.version>1.84</bouncycastle.version>
+        <sshd.version>2.19.0</sshd.version>
+        <bouncycastle.version>1.85</bouncycastle.version>
         <geoip2.version>4.4.0</geoip2.version>
     </properties>
 
@@ -85,7 +85,7 @@
             <dependency>
                 <groupId>org.apache.httpcomponents.client5</groupId>
                 <artifactId>httpclient5</artifactId>
-                <version>5.6.3</version>
+                <version>5.6.4</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.httpcomponents.core5</groupId>
@@ -294,7 +294,7 @@
         <dependency>
             <groupId>com.aerospike</groupId>
             <artifactId>aerospike-reactor-client</artifactId>
-            <version>9.0.5</version>
+            <version>9.2.0</version>
         </dependency>
         <dependency>
             <groupId>org.luaj</groupId>
@@ -343,7 +343,7 @@
             </plugin>
             <plugin>
                 <artifactId>maven-resources-plugin</artifactId>
-                <version>3.3.1</version>
+                <version>3.5.0</version>
                 <configuration>
                     <propertiesEncoding>UTF-8</propertiesEncoding>
                 </configuration>
@@ -508,7 +508,7 @@
                     <plugin>
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>build-helper-maven-plugin</artifactId>
-                        <version>3.6.0</version>
+                        <version>3.6.1</version>
                         <executions>
                             <execution>
                                 <id>tikv-sources</id>
